@@ -108,8 +108,6 @@ public class threedCanvas extends Applet {
         
        // All rockets
  	   Cylinder rocket =  new Cylinder((float) r.getRadius_external() * 6, (float) r.getLength(), ap);
-// 	   Cylinder rocket_spin1 =  new Cylinder((float) r.getSpinRadius(), (float) r.getSpinLength(), ap_sp1);
-// 	   Cylinder rocket_spin2 =  new Cylinder((float) r.getSpinRadius(), (float) r.getSpinLength(), ap_sp1);
 
  	   
  	   
@@ -126,63 +124,7 @@ public class threedCanvas extends Applet {
  	   tg_top.setTransform(translation);
  	    	   
  	   
- 	   // TRANSFORM SPIN 1
- 	   Transform3D transform_spin1 = new Transform3D();
- 	   TransformGroup tg_spin1 = new TransformGroup();
-// 	   Vector3f vector_spin1 = new Vector3f( (float) (r.getSpin1_pos()[0]), (float) (r.getSpin1_pos()[1] - r.getLen()/2), (float) (r.getSpin1_pos()[2]));
-// 	   transform_spin1.setTranslation(vector_spin1);
-// 	   Transform3D rotation_spin1 = new Transform3D();
- 	   // rotation_spin1.rotZ(Math.PI/2);
- 	   
-	   Matrix3d matrix3d = new Matrix3d();
-//	   matrix3d.setColumn(0,  r.getSpin1_rotation_matrix().getColumn(0));
-//	   matrix3d.setColumn(1,  r.getSpin1_rotation_matrix().getColumn(1));
-//	   matrix3d.setColumn(2,  r.getSpin1_rotation_matrix().getColumn(2));
-// 	   rotation_spin1.setRotation(matrix3d);
- 	   
-//	   transform_spin1.mul(rotation_spin1);
-//	   tg_spin1.setTransform(transform_spin1);
-
-	   
-//	   tg_spin1.addChild(rocket_spin1);
- 	   
- 	   // TRANSFORM SPIN 2
- 	   Transform3D transform_spin2 = new Transform3D();
- 	   TransformGroup tg_spin2 = new TransformGroup();
-// 	   Vector3f vector_spin2 = new Vector3f((float) (r.getSpin2_pos()[0]), (float) (r.getSpin2_pos()[1] - r.getLen()/2), (float) (r.getSpin2_pos()[2]));
-// 	   transform_spin2.setTranslation(vector_spin2);
-// 	   Transform3D rotation_spin2 = new Transform3D();
- 	   // rotation_spin2.rotZ(Math.PI/2);
- 	   
-	   Matrix3d matrix3d2 = new Matrix3d();
-//	   matrix3d2.setColumn(0,  r.getSpin2_rotation_matrix().getColumn(0));
-//	   matrix3d2.setColumn(1,  r.getSpin2_rotation_matrix().getColumn(1));
-//	   matrix3d2.setColumn(2,  r.getSpin2_rotation_matrix().getColumn(2));
-// 	   rotation_spin2.setRotation(matrix3d2);
- 	   
- 	   
-//	   transform_spin2.mul(rotation_spin2);
-//	   tg_spin2.setTransform(transform_spin2);
- 	   
- 	   
-// 	   tg_spin2.addChild(rocket_spin2);
- 	    	   
- 	   
- 	   
- 	   // X, Y, Z acis
- 	   /*
- 	   LineArray axisXLines=new LineArray(2,LineArray.COORDINATES);
- 	   group.addChild(new Shape3D(axisXLines));
- 	   axisXLines.setCoordinate(0,  new Point3f(-10.0f, 0.0f, 0.0f));
- 	   axisXLines.setCoordinate(0,  new Point3f(10.0f, 0.0f, 0.0f));
- 	  
- 	   
- 	   LineArray axisYLines=new LineArray(2,LineArray.COORDINATES);
- 	   group.addChild(new Shape3D(axisYLines));
- 	   axisYLines.setCoordinate(0,new Point3f(0.0f,-10.0f,0.0f));
- 	   axisYLines.setCoordinate(1,new Point3f(0.0f,10.0f,0.0f));
- 	   */    
- 	  
+ 
        // Y-Axis
  	   Cylinder yaxis =  new Cylinder((float) 0.04, (float) 80, ap_axis);
  	   axis.addChild(yaxis);
@@ -209,8 +151,6 @@ public class threedCanvas extends Applet {
  	   
  	   // Combining all Transform Groups
  	   tg_parent.addChild(tg_top);
- 	   tg_top.addChild(tg_spin1);
-  	   tg_top.addChild(tg_spin2);
  	   tg_top.addChild(rocket);
  	   group.addChild(tg_parent);
  	   group.addChild(axis);

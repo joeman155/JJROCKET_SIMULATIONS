@@ -215,12 +215,17 @@ public class Simulate {
 				RealVector corrective_cg_vector = utils.crossProduct(rotated_thrust_vector, corrective_rotation);
 				
 				
+				
+				// Determine angle vector in X-direction in global reference frame... Use this later to find angle the CG vector makes with X-axis
+				double[] x_vector_tmp = {1, 0, 0};
+				RealVector x_vector = MatrixUtils.createRealVector(x_vector_tmp);
+				RealVector x_vector_global = utils.revolveVector(r.getAng_x(), r.getAng_y(), r.getAng_z(), x_vector);
+				
+				
+				
 				// Determine the angle this CG makes 
-				//corrective_angle = Math.atan(corrective_cg_vector.getEntry(2)/ corrective_cg_vector.getEntry(0));
-				// corrective_angle = corrective_angle + Math.PI;
-				// corrective_angle = utils.angle_reorg(corrective_angle);
 				double corrective_cg_vector_size = Math.pow(Math.pow(corrective_cg_vector.getEntry(0), 2) + Math.pow(corrective_cg_vector.getEntry(1), 2) + Math.pow(corrective_cg_vector.getEntry(2), 2), 0.5 );
-				corrective_angle = Math.acos(1 * corrective_cg_vector.getEntry(0)/corrective_cg_vector_size);
+				corrective_angle = Math.acos((x_vector_global.getEntry(0) * corrective_cg_vector.getEntry(0) + x_vector_global.getEntry(1) * corrective_cg_vector.getEntry(1) + x_vector_global.getEntry(2) * corrective_cg_vector.getEntry(2))/corrective_cg_vector_size);
 				corrective_angle = corrective_angle + Math.PI;
 				corrective_angle = utils.angle_reorg(corrective_angle);
 				
@@ -241,30 +246,25 @@ public class Simulate {
 			
 			
 			// If the course needs setting, we find out what it should be....
+			// but FIRST we move the middle position of the two masses to the direction
+			// This helps to reduce instabilities introduced
 			if (set_course == 1) {
 				// Get current angles in 0...2Pi range (no negative, nothing > 2Pi
 				s1.setAng_y(s1.getAng_y());
 				s2.setAng_y(s2.getAng_y());
 				
-				intermediate_move = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));  
-				intermediate_move = intermediate_move / 2;
+				/// Find angle between the two smoothers...then halve...this is the mid-point
+				double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));  
+				mid_point_angle = mid_point_angle / 2;
 
 				
-				/*
+				// HACK
+				corrective_angle = Math.PI;
 				
-				double s1_ang = s1.getAng_y() + s1_diff;
-				double s2_ang = s2.getAng_y() + s2_diff;
 				
-				s1_ang = utils.angle_reorg(s1_ang);
-				s2_ang = utils.angle_reorg(s2_ang);
+				// Deduce the distance we need 
+				intermediate_move = corrective_angle - mid_point_angle;
 
-				
-				System.out.println("New S1 Angle: " + s1_ang);
-				System.out.println("New S2 Angle: " + s2_ang);
-				
-				s1.setAng_y(s1_ang);
-				s2.setAng_y(s2_ang);
-				*/
 				
 				// Signal to code to go on to 'Intermediate' move
 				set_course = 2;
@@ -364,7 +364,7 @@ public class Simulate {
 					set_course = 4;
 				}
 					
-				System.out.println("WOTIF: " + s1_diff);
+
 				// Move S1 around
 				if (s1_diff > Math.PI) {
 					s1.setAng_y(s1.getAng_y() + interval.doubleValue() * s1.getMax_angular_speed());
@@ -375,7 +375,7 @@ public class Simulate {
 				} else if (s1_diff <= -Math.PI) {
 					s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
 				} else { 
-					System.out.println("NOWAY1");
+					System.out.println("No Movement required - s1");
 				}
 					
 				
@@ -389,7 +389,7 @@ public class Simulate {
 				} else if (s2_diff <= -Math.PI) {
 					s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
 				} else { 
-					System.out.println("NOWAY2");
+					System.out.println("No Movement required - s2");
 				}
 					
 				System.out.println("FINAL S1 ANGLE: " + s1.getAng_y());
