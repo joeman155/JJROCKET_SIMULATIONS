@@ -403,9 +403,9 @@ public class Rocket {
 		c2 = Math.cos(this.smoother2.getAng_y());
 		c2 = (double) Math.round(c2 * 1000d) / 1000d;
 		s1 = Math.sin(this.smoother1.getAng_y());
-		s1 = (double) Math.round(s1 * 1000d) / 1000d;
+		s1 = -(double) Math.round(s1 * 1000d) / 1000d;  // Make negative to correct direction
 		s2 = Math.sin(this.smoother2.getAng_y());
-		s2 = (double) Math.round(s2 * 1000d) / 1000d;
+		s2 = -(double) Math.round(s2 * 1000d) / 1000d;  // Make negative to correct direction
 		
 		double cx = (this.smoother1.getMass() * this.smoother1.getR() * c1 + this.smoother2.getMass() * this.smoother2.getR() * c2);
 		cx = cx/(this.smoother1.getMass() + this.smoother2.getMass() + this.getMass() + this.motor.getMass());

@@ -55,7 +55,7 @@ public class Simulate {
 		m1.setPeek_thrust_end_time(0.35);
 		m1.setNorm_thrust(10);
 		m1.setNorm_thrust_start_time(0.45);
-		m1.setNorm_thrust_end_time(1.65);
+		m1.setNorm_thrust_end_time(2.65);
 		m1.setIgnition_delay(0.0);
 		
 		
@@ -95,6 +95,10 @@ public class Simulate {
 		r.setSmoother1(s1);
 		r.setSmoother2(s2);
 		
+		
+		// Objects we repeatedly use
+		RealMatrix rotationMatrix;
+		
 
 		// Smoother adjustment settings
 		double velocity_threshold = 5;
@@ -105,7 +109,7 @@ public class Simulate {
 		double s1_direction = 0, s2_direction = 0;
 		double theta;
 		double s1_diff = 0, s2_diff = 0;
-		double offset = 0.5;  // 1/2 angle between final resting place of smoothers
+		double offset = 01.1;  // 1/2 angle between final resting place of smoothers
 		
 		
 		// View Transform
@@ -145,9 +149,9 @@ public class Simulate {
 			double rocket_wt = g * mass_total;
 			
 			// Inaccuracies in Thrust (angles)
-			double angle_deviation1 =   0.0;
+			double angle_deviation1 =   0.25;
 			double angle_deviation2 =   0.0;
-			double angle_deviation3 =   0.6;			
+			double angle_deviation3 =   0.0;			
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
 
 			double[] perfect_thrust = {0, thrust, 0};
@@ -155,16 +159,12 @@ public class Simulate {
 			RealMatrix rotation_matrix = utils.createRotationMatrix(thrust_force_angles[0], thrust_force_angles[1], thrust_force_angles[2]);
 			RealVector thrust_force_vector = utils.matrixVectorMultiply(rotation_matrix,  perfect_thrust_vector);
 		
-			
-			/*
-			double[] thrust_force_vector_tmp_data =  {thrust * r.getDirection().getEntry(0), thrust * r.getDirection().getEntry(1) - rocket_wt, thrust * r.getDirection().getEntry(2)};
-			RealVector thrust_force_vector = MatrixUtils.createRealVector(thrust_force_vector_tmp_data);
-			*/
-			
+
+			// Deduce the Thrust force in global co-ordinate system
 			RealVector thrust_force_vector_global = utils.matrixVectorMultiply(r.getRotationMatrix(), thrust_force_vector);
-			// utils.debug(time, "Thrust Force Vector is:   "  + thrust_force_vector.getEntry(0) + ", " + thrust_force_vector.getEntry(1) + ", " + thrust_force_vector.getEntry(2));
 			utils.debug(time, "Global Force Vector is:   "  + thrust_force_vector_global.getEntry(0) + ", " + thrust_force_vector_global.getEntry(1) + ", " + thrust_force_vector_global.getEntry(2));
 
+			
 			// Compute CG - and get a vector for it - taking into account rotation of the rocket
 			r.computeCg();
 			double cg_vector_tmp[] = {r.getCgx(), r.getCgy(), r.getCgz()};
@@ -183,65 +183,94 @@ public class Simulate {
 			r.updateState(torque_vector, thrust_force_vector_global, mass_total, time_slice);
 			
 			
+			// Deduce rotation velocity in the LOCAL co-ordinate system
+			rotationMatrix = utils.createRotationMatrix(r.getAng_x(), r.getAng_y(), r.getAng_z());
+			RealMatrix rotationMatrix_transpose = rotationMatrix.transpose();
+			double[] rotation_velocity_tmp = {r.getAng_vx(), r.getAng_vy(), r.getAng_vz()};
+			RealVector rotation_velocity_vector = MatrixUtils.createRealVector(rotation_velocity_tmp);
+			RealVector rotation_velocity_local = utils.matrixVectorMultiply(rotationMatrix_transpose, rotation_velocity_vector);
+			utils.debug(time, "LOCAL ANGULAR VEL - VX  = " + 180 * rotation_velocity_local.getEntry(0)/Math.PI +    ", VY  = " + 180 * rotation_velocity_local.getEntry(1)/Math.PI +  ", VZ  = " + 180 * rotation_velocity_local.getEntry(2)/Math.PI);
+			// utils.debug(time, "rotationMatrix_transpose ROW 1:  "  + rotationMatrix_transpose.getEntry(0, 0) + ", " + rotationMatrix_transpose.getEntry(0,1) + ", " + rotationMatrix_transpose.getEntry(0,2));
+			// utils.debug(time, "rotationMatrix_transpose ROW 2:  "  + rotationMatrix_transpose.getEntry(1, 0) + ", " + rotationMatrix_transpose.getEntry(1,1) + ", " + rotationMatrix_transpose.getEntry(1,2));			
+			// utils.debug(time, "rotationMatrix_transpose ROW 3:  "  + rotationMatrix_transpose.getEntry(2, 0) + ", " + rotationMatrix_transpose.getEntry(2,1) + ", " + rotationMatrix_transpose.getEntry(2,2));
+			
+			
+			// Deduce rotation acceleration in the LOCAL co-ordinate system			
+			double[] rotation_acceleration_tmp = {r.getAng_ax(), r.getAng_ay(), r.getAng_az()};
+			RealVector rotation_acceleration_vector = MatrixUtils.createRealVector(rotation_acceleration_tmp);
+			RealVector rotation_acceleration_local = utils.matrixVectorMultiply(rotationMatrix_transpose, rotation_acceleration_vector);			
+			utils.debug(time, "LOCAL ANGULAR ACC - AX  = " + 180 * rotation_acceleration_local.getEntry(0)/Math.PI +    ", AY  = " + 180 * rotation_acceleration_local.getEntry(1)/Math.PI +  ", AZ  = " + 180 * rotation_acceleration_local.getEntry(2)/Math.PI);
 			
 
 			// SMOOTHER CONTROL
 			if (set_course == 0 && 
-					(Math.abs(180 * r.getAng_vx()/Math.PI) > velocity_threshold || Math.abs(180 * r.getAng_vz()/Math.PI) > velocity_threshold)
+					(Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > velocity_threshold || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) > velocity_threshold)
 					) {
-								
-				// Deduce where the smoother should be
-				theta = Math.atan(r.getAng_vz()/r.getAng_vx());
+
+				double skip_control = 0;
+				// We check to see how the rotation acceleration is compared to velocity. If the rotation velocity is slowing down, then
+				// we exit here... he want are headed in the right direction
+				if (Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1 
+						&&
+					Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1) {
+					skip_control = 1;
+					set_course = 0;
+				}
 				
-				System.out.println("!!!!GETTING EXCESSIVE ROTATION!!!! - " + theta);
+				if (skip_control == 0) {
+					// Deduce where the smoother should be
+					// theta = Math.atan(r.getAng_vz()/r.getAng_vx());
+					// We Already have the Rotational velocity co-ordinate in the local system
+					// RealVector corrective_torque_direction = utils.revolveVector(0, Math.PI,  0, rotation_velocity_local);
+					double[] corrective_torque_direction_tmp = {-1 * rotation_velocity_local.getEntry(0), -1 * rotation_velocity_local.getEntry(1), -1 * rotation_velocity_local.getEntry(2)};
+					RealVector corrective_torque_direction = MatrixUtils.createRealVector(corrective_torque_direction_tmp);
+					double dist = Math.pow(Math.pow(corrective_torque_direction.getEntry(0), 2) + Math.pow(corrective_torque_direction.getEntry(1), 2) + Math.pow(corrective_torque_direction.getEntry(2), 2), 0.5);
+					// theta = Math.atan(corrective_torque_direction.getEntry(2)/corrective_torque_direction.getEntry(0));
+				
+					// System.out.println("corrective_torque_direction - X  = " + 180 * corrective_torque_direction.getEntry(0)/Math.PI +    ", Y  = " + 180 * corrective_torque_direction.getEntry(1)/Math.PI +  ", Z  = " + 180 * corrective_torque_direction.getEntry(2)/Math.PI);
+					System.out.println("!!!!GETTING EXCESSIVE ROTATION!!!!"); //  - " + theta + "   " + corrective_torque_direction.getEntry(2) + ", " + corrective_torque_direction.getEntry(0));
 				
 				
-				// Correct the rotation - determine corrective rotation required..... Corrective direction is 180 
-				// degrees out from current direction...so add PI.
-				theta = theta + Math.PI;  
+					// Create Unit Correction'Vector'
+					double[] corrective_rotation_tmp = {corrective_torque_direction.getEntry(0)/dist, corrective_torque_direction.getEntry(1)/dist, corrective_torque_direction.getEntry(2)/dist};
+					RealVector corrective_rotation = MatrixUtils.createRealVector(corrective_rotation_tmp);
 				
-				// Create 'Vector'
-				double[] corrective_rotation_tmp = {Math.cos(theta), 0, Math.sin(theta)};
-				RealVector corrective_rotation = MatrixUtils.createRealVector(corrective_rotation_tmp);
+					// Generate the thrust vector ... not caring about magnitude...only direction...in local coordinate system
+					double[] thrust_vector_tmp = {0, 1, 0};
+					RealVector thrust_vector = MatrixUtils.createRealVector(thrust_vector_tmp);
+				
+					// Determine the direction of the CG vector...needed to produce torque to oppose the current motion
+					RealVector corrective_cg_vector = utils.crossProduct(thrust_vector, corrective_rotation);
 				
 				
-				// Generate the thrust vector ... not caring about magnitude...only direction
-				double[] thrust_vector_tmp = {0, 1, 0};
-				RealVector thrust_vector = MatrixUtils.createRealVector(thrust_vector_tmp);
-				RealVector rotated_thrust_vector = utils.revolveVector(r.getAng_x(), r.getAng_y(), r.getAng_z(), thrust_vector);
+					// Determine angle vector in X-direction in local reference frame... Use this later to find angle the CG vector makes with X-axis
+					double[] x_vector_tmp = {1, 0, 0};
+					RealVector x_vector = MatrixUtils.createRealVector(x_vector_tmp);				
+				
+				
+					// Determine the angle this CG makes 
+					double corrective_cg_vector_size = Math.pow(Math.pow(corrective_cg_vector.getEntry(0), 2) + Math.pow(corrective_cg_vector.getEntry(1), 2) + Math.pow(corrective_cg_vector.getEntry(2), 2), 0.5 );
+					corrective_angle = Math.acos((x_vector.getEntry(0) * corrective_cg_vector.getEntry(0) + x_vector.getEntry(1) * corrective_cg_vector.getEntry(1) + x_vector.getEntry(2) * corrective_cg_vector.getEntry(2))/corrective_cg_vector_size);
+				
+				
+					// The smoothers are put 180 degrees out from the direction the CG vectors point in.
+					corrective_angle = corrective_angle + Math.PI;
+					corrective_angle = utils.angle_reorg(corrective_angle);
+				
+				
+				
+					System.out.println("Corrective_Rotation    = " + corrective_rotation.getEntry(0)   + ", " + corrective_rotation.getEntry(1)   + ", " + corrective_rotation.getEntry(2));
+					System.out.println("Rotated_thrust_vector  = " + thrust_vector.getEntry(0)         + ", " + thrust_vector.getEntry(1)         + ", " + thrust_vector.getEntry(2));
+					System.out.println("Corrective_cg_vector   = " + corrective_cg_vector.getEntry(0)  + ", " + corrective_cg_vector.getEntry(1)  + ", " + corrective_cg_vector.getEntry(2));
+					System.out.println("Corrective angle       = " + corrective_angle);
+				
+				
+				
 
 				
-				// Determine the direction of the CG vector...needed to produce torque to oppose the current motion
-				RealVector corrective_cg_vector = utils.crossProduct(rotated_thrust_vector, corrective_rotation);
-				
-				
-				
-				// Determine angle vector in X-direction in global reference frame... Use this later to find angle the CG vector makes with X-axis
-				double[] x_vector_tmp = {1, 0, 0};
-				RealVector x_vector = MatrixUtils.createRealVector(x_vector_tmp);
-				RealVector x_vector_global = utils.revolveVector(r.getAng_x(), r.getAng_y(), r.getAng_z(), x_vector);
-				
-				
-				
-				// Determine the angle this CG makes 
-				double corrective_cg_vector_size = Math.pow(Math.pow(corrective_cg_vector.getEntry(0), 2) + Math.pow(corrective_cg_vector.getEntry(1), 2) + Math.pow(corrective_cg_vector.getEntry(2), 2), 0.5 );
-				corrective_angle = Math.acos((x_vector_global.getEntry(0) * corrective_cg_vector.getEntry(0) + x_vector_global.getEntry(1) * corrective_cg_vector.getEntry(1) + x_vector_global.getEntry(2) * corrective_cg_vector.getEntry(2))/corrective_cg_vector_size);
-				corrective_angle = corrective_angle + Math.PI;
-				corrective_angle = utils.angle_reorg(corrective_angle);
-				
-				
-				
-				System.out.println("Corrective_Rotation    = " + corrective_rotation.getEntry(0)   + ", " + corrective_rotation.getEntry(1)   + ", " + corrective_rotation.getEntry(2));
-				System.out.println("Rotated_thrust_vector  = " + rotated_thrust_vector.getEntry(0) + ", " + rotated_thrust_vector.getEntry(1) + ", " + rotated_thrust_vector.getEntry(2));
-				System.out.println("Corrective_cg_vector   = " + corrective_cg_vector.getEntry(0)  + ", " + corrective_cg_vector.getEntry(1)  + ", " + corrective_cg_vector.getEntry(2));
-				System.out.println("Corrective angle       = " + corrective_angle);
-				
-				
-				
-
-				
-				// Next step...find out the course to set....
-                set_course = 1;				
+					// Next step...find out the course to set....
+                	set_course = 1;			
+				}
 			}
 			
 			
@@ -256,14 +285,16 @@ public class Simulate {
 				/// Find angle between the two smoothers...then halve...this is the mid-point
 				double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));  
 				mid_point_angle = mid_point_angle / 2;
+				
+				System.out.println("Midpoint Angle: " + mid_point_angle);
 
 				
 				// HACK
-				corrective_angle = Math.PI;
+				// corrective_angle = Math.PI;
 				
 				
 				// Deduce the distance we need 
-				intermediate_move = corrective_angle - mid_point_angle;
+				intermediate_move = Math.abs(corrective_angle - mid_point_angle);
 
 				
 				// Signal to code to go on to 'Intermediate' move
@@ -361,7 +392,8 @@ public class Simulate {
 				final_angle_move = final_angle_move - interval.doubleValue() * s1.getMax_angular_speed();
 					
 				if (final_angle_move < 0) {
-					set_course = 4;
+					set_course = 0;
+					
 				}
 					
 
@@ -420,7 +452,7 @@ public class Simulate {
 			
 			
 			// Update the Java 3-D calculations
-			RealMatrix rotationMatrix = utils.createRotationMatrix(r.getAng_x(), r.getAng_y(), r.getAng_z());
+			rotationMatrix = utils.createRotationMatrix(r.getAng_x(), r.getAng_y(), r.getAng_z());
 			Matrix3d matrix3d = new Matrix3d();
 			matrix3d.setColumn(0,  rotationMatrix.getColumn(0));
 			matrix3d.setColumn(1,  rotationMatrix.getColumn(1));
