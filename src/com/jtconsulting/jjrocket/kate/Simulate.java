@@ -110,7 +110,7 @@ public class Simulate {
 		double s1_direction = 0, s2_direction = 0;
 		double theta;
 		double s1_diff = 0, s2_diff = 0;
-		double offset = 0.9;  // 1/2 angle between final resting place of smoothers
+		double offset = 0.8;  // 1/2 angle between final resting place of smoothers
 		
 		
 		// View Transform
@@ -150,9 +150,9 @@ public class Simulate {
 			double rocket_wt = g * mass_total;
 			
 			// Inaccuracies in Thrust (angles)
-			double angle_deviation1 =   0.5;
+			double angle_deviation1 =   0.25;
 			double angle_deviation2 =   0.0;
-			double angle_deviation3 =   0.0;			
+			double angle_deviation3 =   0.25;			
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
 
 			double[] perfect_thrust = {0, thrust, 0};
@@ -212,11 +212,18 @@ public class Simulate {
 				double skip_control = 0;
 				// We check to see how the rotation acceleration is compared to velocity. If the rotation velocity is slowing down, then
 				// we exit here... because we are headed in the right direction
-				if (Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1 
+				if (
+						(Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1 || Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) <  velocity_threshold)
 						&&
-					Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1) {
+						(Math.signum(rotation_acceleration_local.getEntry(2)) * Math.signum(rotation_velocity_local.getEntry(2)) == -1 || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) < velocity_threshold) 
+						) {
 					skip_control = 1;
 					set_course = 0;
+				} else {
+					System.out.println("VAL1 = " + Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)));
+					System.out.println("fig1 = " + rotation_acceleration_local.getEntry(0));
+					System.out.println("fig2 = " + rotation_velocity_local.getEntry(0));
+					System.out.println("VAL2 = " + Math.signum(rotation_acceleration_local.getEntry(2)) * Math.signum(rotation_velocity_local.getEntry(2)));
 				}
 				
 				
@@ -245,6 +252,7 @@ public class Simulate {
 				
 					// Determine the direction of the CG vector...needed to produce torque to oppose the current motion
 					RealVector corrective_cg_vector = utils.crossProduct(thrust_vector, corrective_rotation);
+
 				
 				
 					// Determine angle vector in X-direction in local reference frame... Use this later to find angle the CG vector makes with X-axis
@@ -262,15 +270,25 @@ public class Simulate {
 					double zcross = x_vector.getEntry(0) * corrective_cg_vector.getEntry(2) - corrective_cg_vector.getEntry(0) * x_vector.getEntry(2);
 					System.out.println("zcross: " + zcross);
 					
+					
+					
 					// The smoothers are put 180 degrees out from the direction the CG vectors point in.
 					// corrective_angle = corrective_angle + Math.PI;
 					if (zcross < 0) {
 						System.out.println("WHATEVER");
 						corrective_angle = corrective_angle + Math.PI;
 					}
-					
-					
+
 					corrective_angle = utils.angle_reorg(corrective_angle);
+					
+					/*
+					if (corrective_angle < Math.PI) {
+						corrective_angle = Math.PI - corrective_angle;
+					} else if (corrective_angle >= Math.PI && corrective_angle < 2 * Math.PI) {
+						corrective_angle = 2 * Math.PI - (corrective_angle - Math.PI);
+					}
+*/
+					
 				
 				
 				
@@ -293,18 +311,32 @@ public class Simulate {
 			if (set_course == 1) {
 				
 				double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));
+				//double zcross = Math.cos(s1.getAng_y()) * Math.sin(s2.getAng_y()) - Math.cos(s2.getAng_y()) * Math.sin(s1.getAng_y());
+				
+				// The smoothers are put 180 degrees out from the direction the CG vectors point in.
+				// corrective_angle = corrective_angle + Math.PI;
+				//if (zcross < 0) {
+				//	mid_point_angle = mid_point_angle + Math.PI;
+				//}		
+				
 				mid_point_angle = utils.angle_reorg(mid_point_angle);
+				
+				/*
 				if (mid_point_angle > Math.PI) {
 					mid_point_angle = mid_point_angle - Math.PI;
 				}
+				*/ 
+				
+				// WE know that mid_point_angle MUST be less then 180 degrees BECAUSE this angle is got from dot-product
 				
 				if (mid_point_angle < Math.PI) {
-					move_to_neutral_distance = mid_point_angle/2;
+					move_to_neutral_distance = (Math.PI - mid_point_angle)/2;
 				} else {
 					move_to_neutral_distance = 0;
 				}
 				
-				
+				System.out.println("NEUTRALMIDPOINT: " + mid_point_angle);
+				System.out.println("NEUTRAL: " + move_to_neutral_distance);
 				
 				set_course = 2;
 			}
@@ -380,7 +412,7 @@ public class Simulate {
 					intermediate_move = Math.PI - intermediate_move;
 					s1_direction = 2;
 					s2_direction = 2;
-				} else if (intermediate_move < Math.PI/2 && intermediate_move > 0) {
+				} else if (intermediate_move <= Math.PI/2 && intermediate_move > 0) {
 					s1_direction = 1;
 					s2_direction = 1;
 				} else {
