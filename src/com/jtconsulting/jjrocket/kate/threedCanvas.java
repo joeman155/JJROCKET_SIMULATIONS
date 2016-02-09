@@ -57,7 +57,7 @@ public class threedCanvas extends Applet {
        TransformGroup viewTransform = viewingPlatform.getViewPlatformTransform();
   	   Transform3D view3d = new Transform3D();
   	   viewTransform.getTransform(view3d);
-  	   view3d.lookAt(new Point3d(42,16,42),  new Point3d(0,16,0),  new Vector3d(0,1,0));
+  	   view3d.lookAt(new Point3d(52,16,52),  new Point3d(0,20,0),  new Vector3d(0,1,0));
   	   view3d.invert();
   	   viewTransform.setTransform(view3d);
   	   Viewer viewer = new Viewer(canvas);

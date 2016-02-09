@@ -117,7 +117,7 @@ public class utils {
 		double new_angle;
 		
 		if (Math.abs(angle) >= 2 * Math.PI) {
-			new_angle = 2 * Math.PI * (Math.round(angle/(2 * Math.PI)) - (angle/(2 * Math.PI)));
+			new_angle = 2 * Math.PI * ((angle/(2 * Math.PI)) - Math.round(angle/(2 * Math.PI)));
 		} else {
 			new_angle = angle;
 		}
