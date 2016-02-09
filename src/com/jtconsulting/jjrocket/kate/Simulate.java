@@ -104,12 +104,13 @@ public class Simulate {
 		double velocity_threshold = 5;
 		double set_course = 0;		
 		double corrective_angle = 0;
+		double move_to_neutral_distance = 0;
 		double intermediate_move = 0;
 		double final_angle_move = 0;
 		double s1_direction = 0, s2_direction = 0;
 		double theta;
 		double s1_diff = 0, s2_diff = 0;
-		double offset = 01.1;  // 1/2 angle between final resting place of smoothers
+		double offset = 0.9;  // 1/2 angle between final resting place of smoothers
 		
 		
 		// View Transform
@@ -149,7 +150,7 @@ public class Simulate {
 			double rocket_wt = g * mass_total;
 			
 			// Inaccuracies in Thrust (angles)
-			double angle_deviation1 =   0.25;
+			double angle_deviation1 =   0.5;
 			double angle_deviation2 =   0.0;
 			double angle_deviation3 =   0.0;			
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
@@ -207,15 +208,18 @@ public class Simulate {
 					(Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > velocity_threshold || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) > velocity_threshold)
 					) {
 
+				
 				double skip_control = 0;
 				// We check to see how the rotation acceleration is compared to velocity. If the rotation velocity is slowing down, then
-				// we exit here... he want are headed in the right direction
+				// we exit here... because we are headed in the right direction
 				if (Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1 
 						&&
 					Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1) {
 					skip_control = 1;
 					set_course = 0;
 				}
+				
+				
 				
 				if (skip_control == 0) {
 					// Deduce where the smoother should be
@@ -274,19 +278,69 @@ public class Simulate {
 			}
 			
 			
+			// We want to get ourselves back to the neutral position...where the CG of the two smoothers is at (0, cy, 0)
+			if (set_course == 1) {
+				
+				double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));
+				mid_point_angle = utils.angle_reorg(mid_point_angle);
+				if (mid_point_angle > Math.PI) {
+					mid_point_angle = mid_point_angle - Math.PI;
+				}
+				
+				if (mid_point_angle < Math.PI) {
+					move_to_neutral_distance = mid_point_angle/2;
+				} else {
+					move_to_neutral_distance = 0;
+				}
+				
+				
+				
+				set_course = 2;
+			}
+			
+			
+			
+			// Based on what was determined in set_course == 1 step above, we move the smoothers
+			if (set_course == 2) {
+				
+				if (move_to_neutral_distance <= 0) {
+					set_course = 3;
+					System.out.println("CAPTAIN");
+				} else {
+					move_to_neutral_distance = move_to_neutral_distance - interval.doubleValue() * s2.getMax_angular_speed();
+					
+					double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));
+					if (mid_point_angle > Math.PI) {
+						s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
+						s2.setAng_y(s2.getAng_y() + interval.doubleValue() * s2.getMax_angular_speed());
+					} else if (mid_point_angle < Math.PI) {
+						s1.setAng_y(s1.getAng_y() + interval.doubleValue() * s1.getMax_angular_speed());
+						s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
+					} else {
+						set_course = 3;
+						System.out.println("UNDERPANTS");
+					}
+					
+					
+				}
+				System.out.println("BACK TO NEUTRAL S1 ANGLE: " + s1.getAng_y());
+				System.out.println("BACK TO NEUTRAL S2 ANGLE: " + s2.getAng_y());
+			}			
+			
+			
 			// If the course needs setting, we find out what it should be....
 			// but FIRST we move the middle position of the two masses to the direction
 			// This helps to reduce instabilities introduced
-			if (set_course == 1) {
+			if (set_course == 3) {
 				// Get current angles in 0...2Pi range (no negative, nothing > 2Pi
-				s1.setAng_y(s1.getAng_y());
-				s2.setAng_y(s2.getAng_y());
+				//s1.setAng_y(s1.getAng_y());
+				//s2.setAng_y(s2.getAng_y());
 				
 				/// Find angle between the two smoothers...then halve...this is the mid-point
 				double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));  
 				mid_point_angle = mid_point_angle / 2;
 				
-				System.out.println("Midpoint Angle: " + mid_point_angle);
+				
 
 				
 				// HACK
@@ -295,15 +349,38 @@ public class Simulate {
 				
 				// Deduce the distance we need 
 				intermediate_move = Math.abs(corrective_angle - mid_point_angle);
-
+				
+				// If Greater than Pi, then we are being in-efficient
+				if (intermediate_move >= Math.PI) {
+					intermediate_move = intermediate_move - Math.PI;
+				} 
+				
+				// Figure out which direction to move in...to take up least amount of time
+				if (intermediate_move < Math.PI && intermediate_move > Math.PI/2) {
+					intermediate_move = Math.PI - intermediate_move;
+					s1_direction = 2;
+					s2_direction = 2;
+				} else if (intermediate_move < Math.PI/2 && intermediate_move > 0) {
+					s1_direction = 1;
+					s2_direction = 1;
+				} else {
+					s1_direction = 0;
+					s2_direction = 0;
+					intermediate_move = 0;
+				}
+				
+				System.out.println("Midpoint Angle: " + mid_point_angle);
+				System.out.println("Intermediate Angle: " + intermediate_move);
+				System.out.println("S1 Direction: " + s1_direction);
+				System.out.println("S2 Direction: " + s2_direction);
 				
 				// Signal to code to go on to 'Intermediate' move
-				set_course = 2;
+				set_course = 4;
 				
 				// Intermediate move...before motion to get into final position
 				// intermediate_move = Math.PI/2;  // How far we move BOTH
-				s1_direction = 1;  // 0 - No movement, 1 = CCW, 2 = CW
-				s2_direction = 1;  // 0 - No movement, 1 = CCW, 2 = CW
+				// s1_direction = 1;  // 0 - No movement, 1 = CCW, 2 = CW
+				// s2_direction = 1;  // 0 - No movement, 1 = CCW, 2 = CW
 			}
 			
 			
@@ -342,7 +419,7 @@ public class Simulate {
 				
 			}
 			 */
-			if (set_course == 2) {			
+			if (set_course == 4) {			
 				
 				// Intermediate move - moving both weights together
 				intermediate_move = intermediate_move - interval.doubleValue() * s1.getMax_angular_speed();
@@ -356,7 +433,7 @@ public class Simulate {
 					final_angle_move = final_angle_move / 2 - offset;
 					
 					// final_angle_move = Math.abs(s1_diff);
-					set_course = 3;
+					set_course = 5;
 					
 					System.out.println("New S1 Diff: " + s1_diff);
 					System.out.println("New S2 Diff: " + s2_diff);
@@ -385,7 +462,7 @@ public class Simulate {
 			
 			// Course is known...now we need to 'move' there
 			// No smarts in how to get there....Just get us there.
-			if (set_course == 3) {
+			if (set_course == 5) {
 
 				
 				// If corrective Angle > 0
