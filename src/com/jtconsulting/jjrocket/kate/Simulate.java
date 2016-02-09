@@ -255,10 +255,21 @@ public class Simulate {
 					// Determine the angle this CG makes 
 					double corrective_cg_vector_size = Math.pow(Math.pow(corrective_cg_vector.getEntry(0), 2) + Math.pow(corrective_cg_vector.getEntry(1), 2) + Math.pow(corrective_cg_vector.getEntry(2), 2), 0.5 );
 					corrective_angle = Math.acos((x_vector.getEntry(0) * corrective_cg_vector.getEntry(0) + x_vector.getEntry(1) * corrective_cg_vector.getEntry(1) + x_vector.getEntry(2) * corrective_cg_vector.getEntry(2))/corrective_cg_vector_size);
+					System.out.println("RAW Corrective angle       = " + corrective_angle);
 				
-				
+					
+					// Figure out if    0 < angle 180  OR   180 < angle < 360
+					double zcross = x_vector.getEntry(0) * corrective_cg_vector.getEntry(2) - corrective_cg_vector.getEntry(0) * x_vector.getEntry(2);
+					System.out.println("zcross: " + zcross);
+					
 					// The smoothers are put 180 degrees out from the direction the CG vectors point in.
-					corrective_angle = corrective_angle + Math.PI;
+					// corrective_angle = corrective_angle + Math.PI;
+					if (zcross < 0) {
+						System.out.println("WHATEVER");
+						corrective_angle = corrective_angle + Math.PI;
+					}
+					
+					
 					corrective_angle = utils.angle_reorg(corrective_angle);
 				
 				
@@ -310,12 +321,21 @@ public class Simulate {
 					move_to_neutral_distance = move_to_neutral_distance - interval.doubleValue() * s2.getMax_angular_speed();
 					
 					double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));
+					double zcross = Math.cos(s1.getAng_y()) * Math.sin(s2.getAng_y()) - Math.cos(s2.getAng_y()) * Math.sin(s1.getAng_y());
+					
+					// The smoothers are put 180 degrees out from the direction the CG vectors point in.
+					// corrective_angle = corrective_angle + Math.PI;
+					if (zcross < 0) {
+						mid_point_angle = mid_point_angle + Math.PI;
+					}
+					
+					
 					if (mid_point_angle > Math.PI) {
-						s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
-						s2.setAng_y(s2.getAng_y() + interval.doubleValue() * s2.getMax_angular_speed());
-					} else if (mid_point_angle < Math.PI) {
 						s1.setAng_y(s1.getAng_y() + interval.doubleValue() * s1.getMax_angular_speed());
 						s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
+					} else if (mid_point_angle < Math.PI) {
+						s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
+						s2.setAng_y(s2.getAng_y() + interval.doubleValue() * s2.getMax_angular_speed());
 					} else {
 						set_course = 3;
 						System.out.println("UNDERPANTS");
