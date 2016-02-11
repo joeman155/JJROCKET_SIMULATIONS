@@ -83,17 +83,17 @@ public class Simulate {
 		
 		
 		Smoother s1 = new Smoother();
-		s1.setMass(0.035);
+		s1.setMass(0.025);
 		s1.setR(0.019);
 		s1.setY(0.250);
-		s1.setMax_angular_speed((Math.PI/3)/0.15);
+		s1.setMax_angular_speed((Math.PI/3)/0.1);
 		s1.setAng_y(0);
 		
 		Smoother s2 = new Smoother();
-		s2.setMass(0.035);
+		s2.setMass(0.025);
 		s2.setR(0.019);
 		s2.setY(0.250);
-		s2.setMax_angular_speed((Math.PI/3)/0.15);
+		s2.setMax_angular_speed((Math.PI/3)/0.1);
 		s2.setAng_y(Math.PI);
 		
 		
@@ -155,9 +155,9 @@ public class Simulate {
 			double rocket_wt = g * mass_total;
 			
 			// Inaccuracies in Thrust (angles)
-			double angle_deviation1 =   0.70;
+			double angle_deviation1 =   0.00;
 			double angle_deviation2 =   0.0;
-			double angle_deviation3 =   0.00;	
+			double angle_deviation3 =   0.50;	
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
 
 			double[] perfect_thrust = {0, thrust, 0};
@@ -306,10 +306,24 @@ public class Simulate {
 					move_to_neutral_distance = 0;
 				}
 				
-				System.out.println("NEUTRALMIDPOINT: " + mid_point_angle);
-				System.out.println("NEUTRAL: " + move_to_neutral_distance);
+
 				
 				set_course = 2;
+				
+				if (utils.angle_reorg(s2.getAng_y()) >= utils.angle_reorg(s1.getAng_y())) {
+					s1_direction = 1; // CW
+					s2_direction = 2; // CCW
+				} else if (utils.angle_reorg(s2.getAng_y()) < utils.angle_reorg(s1.getAng_y())) {
+					s1_direction = 2; // CW
+					s2_direction = 1; // CCW
+				}				
+				
+				System.out.println("NEUTRALMIDPOINT: " + mid_point_angle);
+				System.out.println("NEUTRAL: " + move_to_neutral_distance);
+				System.out.println("s1_direction: " + s1_direction);
+				
+				s1.setAng_y(utils.angle_reorg(s1.getAng_y()));
+				s2.setAng_y(utils.angle_reorg(s2.getAng_y()));
 			}
 			
 			
@@ -322,6 +336,8 @@ public class Simulate {
 				} else {
 					move_to_neutral_distance = move_to_neutral_distance - interval.doubleValue() * s2.getMax_angular_speed();
 					
+					
+					/*
 					double mid_point_angle = Math.acos(Math.cos(s1.getAng_y()) * Math.cos(s2.getAng_y()) + Math.sin(s1.getAng_y()) * Math.sin(s2.getAng_y()));
 					double zcross = Math.cos(s1.getAng_y()) * Math.sin(s2.getAng_y()) - Math.cos(s2.getAng_y()) * Math.sin(s1.getAng_y());
 					
@@ -341,6 +357,16 @@ public class Simulate {
 					} else {
 						set_course = 3;
 					}
+					*/
+					if (s1_direction == 1) {
+						s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
+						s2.setAng_y(s2.getAng_y() + interval.doubleValue() * s2.getMax_angular_speed());
+					} else if (s1_direction == 2) {
+						s1.setAng_y(s1.getAng_y() + interval.doubleValue() * s1.getMax_angular_speed());
+						s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
+					} else {
+						System.out.println("Unusual state. Not able to move back to resting state");
+					} 
 					
 					
 				}
@@ -509,6 +535,18 @@ public class Simulate {
 					// So. let's assume we are over-correcting
 					set_course = 7;
 					resting_angle_move = Math.PI;
+					
+					s1.setAng_y(utils.angle_reorg(s1.getAng_y()));
+					s2.setAng_y(utils.angle_reorg(s2.getAng_y()));
+					
+					if (s2.getAng_y() >= s1.getAng_y()) {
+						s1_direction = 1; // CW
+						s2_direction = 2; // CCW
+					} else if (s2.getAng_y() < s1.getAng_y()) {
+						s1_direction = 2; // CW
+						s2_direction = 1; // CCW
+					}					
+					
 				}
 				
 				
@@ -521,6 +559,18 @@ public class Simulate {
 				
 					set_course = 7;
 					resting_angle_move = Math.PI/2;
+					
+					
+					s1.setAng_y(utils.angle_reorg(s1.getAng_y()));
+					s2.setAng_y(utils.angle_reorg(s2.getAng_y()));
+					
+					if (s2.getAng_y() >= s1.getAng_y()) {
+						s1_direction = 1; // CW
+						s2_direction = 2; // CCW
+					} else if (s2.getAng_y() < s1.getAng_y()) {
+						s1_direction = 2; // CW
+						s2_direction = 1; // CCW
+					}
 				}				
 				
 				
@@ -531,10 +581,13 @@ public class Simulate {
 			// From results in (set_course == 6), we now need to make adjustments
 			if (set_course == 7) {
 				resting_angle_move = resting_angle_move - interval.doubleValue() * s1.getMax_angular_speed();
-				if (s2.getAng_y() >= s1.getAng_y()) {
+				
+				System.out.println("S1:" + utils.angle_reorg(s1.getAng_y()));
+				System.out.println("S2:" + utils.angle_reorg(s2.getAng_y()));
+				if (s1_direction == 1) {
 					s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
 					s2.setAng_y(s2.getAng_y() + interval.doubleValue() * s2.getMax_angular_speed());
-				} else if (s2.getAng_y() < s1.getAng_y()) {
+				} else if (s1_direction == 2) {
 					s1.setAng_y(s1.getAng_y() + interval.doubleValue() * s1.getMax_angular_speed());
 					s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
 				} else {
@@ -545,7 +598,7 @@ public class Simulate {
 				System.out.println("RESTING S2 ANGLE: " + s2.getAng_y());
 				
 				if (resting_angle_move <= 0 || (Math.abs(180 * rotation_acceleration_local.getEntry(0)/Math.PI) < 5 && Math.abs(180 * rotation_acceleration_local.getEntry(2)/Math.PI) < 5)) {
-					set_course = 0;
+					set_course = 10;
 					System.out.println("Back to a semi-stable state, " + resting_angle_move + ", " + Math.abs(rotation_acceleration_local.getEntry(0)) + ", " + Math.abs(rotation_acceleration_local.getEntry(2)));
 				}
 			}
