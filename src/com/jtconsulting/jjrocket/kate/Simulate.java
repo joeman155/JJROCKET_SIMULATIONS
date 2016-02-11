@@ -157,7 +157,7 @@ public class Simulate {
 			// Inaccuracies in Thrust (angles)
 			double angle_deviation1 =   0.00;
 			double angle_deviation2 =   0.0;
-			double angle_deviation3 =   0.50;	
+			double angle_deviation3 =   -0.50;	
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
 
 			double[] perfect_thrust = {0, thrust, 0};
@@ -370,8 +370,8 @@ public class Simulate {
 					
 					
 				}
-				System.out.println("BACK TO NEUTRAL S1 ANGLE: " + s1.getAng_y());
-				System.out.println("BACK TO NEUTRAL S2 ANGLE: " + s2.getAng_y());
+				// System.out.println("BACK TO NEUTRAL S1 ANGLE: " + s1.getAng_y());
+				// System.out.println("BACK TO NEUTRAL S2 ANGLE: " + s2.getAng_y());
 			}			
 			
 			
@@ -449,9 +449,9 @@ public class Simulate {
 					// final_angle_move = Math.abs(s1_diff);
 					set_course = 5;
 					
-					System.out.println("New S1 Diff: " + s1_diff);
-					System.out.println("New S2 Diff: " + s2_diff);
-					System.out.println("final_angle_move = " + final_angle_move);
+					// System.out.println("New S1 Diff: " + s1_diff);
+					// System.out.println("New S2 Diff: " + s2_diff);
+					// System.out.println("final_angle_move = " + final_angle_move);
 				}
 					
 				// Move S1 around
@@ -469,8 +469,8 @@ public class Simulate {
 					s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
 				}
 					
-				System.out.println("S1 ANGLE: " + s1.getAng_y());
-				System.out.println("S2 ANGLE: " + s2.getAng_y());
+				// System.out.println("S1 ANGLE: " + s1.getAng_y());
+				// System.out.println("S2 ANGLE: " + s2.getAng_y());
 				
 			}
 			
@@ -515,8 +515,8 @@ public class Simulate {
 					System.out.println("No Movement required - s2");
 				}
 					
-				System.out.println("FINAL S1 ANGLE: " + s1.getAng_y());
-				System.out.println("FINAL S2 ANGLE: " + s2.getAng_y());
+				// System.out.println("FINAL S1 ANGLE: " + s1.getAng_y());
+				// System.out.println("FINAL S2 ANGLE: " + s2.getAng_y());
 				
 			}			
 			
@@ -594,8 +594,8 @@ public class Simulate {
 					System.out.println("Unusual state. Not able to move back to resting state");
 				}
 				
-				System.out.println("RESTING S1 ANGLE: " + s1.getAng_y());
-				System.out.println("RESTING S2 ANGLE: " + s2.getAng_y());
+				// System.out.println("RESTING S1 ANGLE: " + s1.getAng_y());
+				// System.out.println("RESTING S2 ANGLE: " + s2.getAng_y());
 				
 				if (resting_angle_move <= 0 || (Math.abs(180 * rotation_acceleration_local.getEntry(0)/Math.PI) < 5 && Math.abs(180 * rotation_acceleration_local.getEntry(2)/Math.PI) < 5)) {
 					set_course = 10;
@@ -615,7 +615,8 @@ public class Simulate {
 			utils.debug(time, "Inertia ROW 1:  "  + r.getMomentOfInertia().getEntry(0, 0) + ", " + r.getMomentOfInertia().getEntry(0,1) + ", " + r.getMomentOfInertia().getEntry(0,2));
 			utils.debug(time, "Inertia ROW 2:  "  + r.getMomentOfInertia().getEntry(1, 0) + ", " + r.getMomentOfInertia().getEntry(1,1) + ", " + r.getMomentOfInertia().getEntry(1,2));			
 			utils.debug(time, "Inertia ROW 3:  "  + r.getMomentOfInertia().getEntry(2, 0) + ", " + r.getMomentOfInertia().getEntry(2,1) + ", " + r.getMomentOfInertia().getEntry(2,2));
-			
+			utils.debug(time, "S1:" + utils.angle_reorg(s1.getAng_y()));
+			utils.debug(time, "S2:" + utils.angle_reorg(s2.getAng_y()));
 			
 			
 			// Blank line(s) between intervals
