@@ -101,16 +101,18 @@ public class Simulate {
 		
 
 		// Smoother adjustment settings
-		double velocity_threshold = 5;
+		double upper_velocity_threshold = 5;
+		double lower_velocity_threshold = 2;
 		double set_course = 0;		
 		double corrective_angle = 0;
 		double move_to_neutral_distance = 0;
 		double intermediate_move = 0;
 		double final_angle_move = 0;
+		double resting_angle_move = 0;
 		double s1_direction = 0, s2_direction = 0;
 		double theta;
 		double s1_diff = 0, s2_diff = 0;
-		double offset = 0.009;  // 1/2 angle between final resting place of smoothers
+		double offset = 0.000;  // 1/2 angle between final resting place of smoothers
 		
 
 		
@@ -148,9 +150,9 @@ public class Simulate {
 			double rocket_wt = g * mass_total;
 			
 			// Inaccuracies in Thrust (angles)
-			double angle_deviation1 =   -0.80;
+			double angle_deviation1 =   0.70;
 			double angle_deviation2 =   0.0;
-			double angle_deviation3 =   0;	
+			double angle_deviation3 =   0.00;	
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
 
 			double[] perfect_thrust = {0, thrust, 0};
@@ -200,7 +202,7 @@ public class Simulate {
 
 			// SMOOTHER CONTROL
 			if (set_course == 0 && 
-					(Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > velocity_threshold || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) > velocity_threshold)
+					(Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > upper_velocity_threshold || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) > upper_velocity_threshold)
 					) {
 
 				
@@ -208,9 +210,9 @@ public class Simulate {
 				// We check to see how the rotation acceleration is compared to velocity. If the rotation velocity is slowing down, then
 				// we exit here... because we are headed in the right direction
 				if (
-						(Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1 || Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) <  velocity_threshold)
+						(Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) == -1 || Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) <  upper_velocity_threshold)
 						&&
-						(Math.signum(rotation_acceleration_local.getEntry(2)) * Math.signum(rotation_velocity_local.getEntry(2)) == -1 || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) < velocity_threshold) 
+						(Math.signum(rotation_acceleration_local.getEntry(2)) * Math.signum(rotation_velocity_local.getEntry(2)) == -1 || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) < upper_velocity_threshold) 
 						) {
 					skip_control = 1;
 					set_course = 0;
@@ -254,14 +256,10 @@ public class Simulate {
 				
 					// Determine the angle this CG makes 
 					double corrective_cg_vector_size = Math.pow(Math.pow(corrective_cg_vector.getEntry(0), 2) + Math.pow(corrective_cg_vector.getEntry(1), 2) + Math.pow(corrective_cg_vector.getEntry(2), 2), 0.5 );
-					corrective_angle = Math.acos((x_vector.getEntry(0) * corrective_cg_vector.getEntry(0) + x_vector.getEntry(1) * corrective_cg_vector.getEntry(1) + x_vector.getEntry(2) * corrective_cg_vector.getEntry(2))/corrective_cg_vector_size);
-					System.out.println("RAW Corrective angle       = " + corrective_angle);
-				
+					corrective_angle = Math.acos((x_vector.getEntry(0) * corrective_cg_vector.getEntry(0) + x_vector.getEntry(1) * corrective_cg_vector.getEntry(1) + x_vector.getEntry(2) * corrective_cg_vector.getEntry(2))/corrective_cg_vector_size);				
 					
 					// Figure out if    0 < angle 180  OR   180 < angle < 360
-					double zcross = x_vector.getEntry(0) * corrective_cg_vector.getEntry(2) - corrective_cg_vector.getEntry(0) * x_vector.getEntry(2);
-					System.out.println("zcross: " + zcross);
-					
+					double zcross = x_vector.getEntry(0) * corrective_cg_vector.getEntry(2) - corrective_cg_vector.getEntry(0) * x_vector.getEntry(2);					
 					
 					
 					// The smoothers are put 180 degrees out from the direction the CG vectors point in.
@@ -275,10 +273,6 @@ public class Simulate {
 					
 					// Make sure angle is between 0 and 6.28
 					corrective_angle = utils.angle_reorg(corrective_angle);
-					
-
-					
-				
 				
 				
 					System.out.println("Corrective_Rotation    = " + corrective_rotation.getEntry(0)   + ", " + corrective_rotation.getEntry(1)   + ", " + corrective_rotation.getEntry(2));
@@ -286,9 +280,6 @@ public class Simulate {
 					System.out.println("Corrective_cg_vector   = " + corrective_cg_vector.getEntry(0)  + ", " + corrective_cg_vector.getEntry(1)  + ", " + corrective_cg_vector.getEntry(2));
 					System.out.println("Corrective angle       = " + corrective_angle);
 				
-				
-				
-
 				
 					// Next step...find out the course to set....
                 	set_course = 1;			
@@ -400,7 +391,7 @@ public class Simulate {
 				
 				
 				System.out.println("Midpoint Angle: " + mid_point_angle);
-				System.out.println("Intermediate Angle: " + intermediate_move);
+				System.out.println("Intermediate move (distance): " + intermediate_move);
 				System.out.println("S1 Direction: " + s1_direction);
 				System.out.println("S2 Direction: " + s2_direction);
 				
@@ -461,7 +452,7 @@ public class Simulate {
 				final_angle_move = final_angle_move - interval.doubleValue() * s1.getMax_angular_speed();
 					
 				if (final_angle_move < 0) {
-					set_course = 10;
+					set_course = 6;
 					
 				}
 					
@@ -498,6 +489,61 @@ public class Simulate {
 				
 			}			
 			
+			
+			
+			// We try to see how the acceleration is going....do we need to back off a little
+			// i.e. we want to 'moderate' the deacceleration
+			if (set_course == 6) {
+				// First make sure that acceleration is in opposite direction of velocity (i.e. it is slowing down)
+				if ((Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) != -1 && Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > upper_velocity_threshold) 
+						|| 
+				    (Math.signum(rotation_acceleration_local.getEntry(2)) * Math.signum(rotation_velocity_local.getEntry(2)) != -1 && Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) > upper_velocity_threshold)) {
+					
+					System.out.println("NOT REDUCING VELOCITY. EITHER malfunction in code, or change in forces or we are now over correcting!");
+					
+					// So. let's assume we are over-correcting
+					set_course = 7;
+					resting_angle_move = Math.PI;
+				}
+				
+				
+
+				
+				// If velocity < lower_velocity_threshold, then start to reduce acceleration
+				if (Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) <  lower_velocity_threshold &&
+						Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) <  lower_velocity_threshold) {
+					System.out.println("SUCCESSFULLY REDUCING VELOCITY! Need to ease back back");
+				
+					set_course = 7;
+					resting_angle_move = Math.PI/2;
+				}				
+				
+				
+				
+			}
+			
+			
+			// From results in (set_course == 6), we now need to make adjustments
+			if (set_course == 7) {
+				resting_angle_move = resting_angle_move - interval.doubleValue() * s1.getMax_angular_speed();
+				if (s2.getAng_y() >= s1.getAng_y()) {
+					s1.setAng_y(s1.getAng_y() - interval.doubleValue() * s1.getMax_angular_speed());
+					s2.setAng_y(s2.getAng_y() + interval.doubleValue() * s2.getMax_angular_speed());
+				} else if (s2.getAng_y() < s1.getAng_y()) {
+					s1.setAng_y(s1.getAng_y() + interval.doubleValue() * s1.getMax_angular_speed());
+					s2.setAng_y(s2.getAng_y() - interval.doubleValue() * s2.getMax_angular_speed());
+				} else {
+					System.out.println("Unusual state. Not able to move back to resting state");
+				}
+				
+				System.out.println("RESTING S1 ANGLE: " + s1.getAng_y());
+				System.out.println("RESTING S2 ANGLE: " + s2.getAng_y());
+				
+				if (resting_angle_move <= 0 || (Math.abs(180 * rotation_acceleration_local.getEntry(0)/Math.PI) < 5 && Math.abs(180 * rotation_acceleration_local.getEntry(2)/Math.PI) < 5)) {
+					set_course = 10;
+					System.out.println("Back to a semi-stable state, " + resting_angle_move + ", " + Math.abs(rotation_acceleration_local.getEntry(0)) + ", " + Math.abs(rotation_acceleration_local.getEntry(2)));
+				}
+			}
 			
 			
 			// Print out new state

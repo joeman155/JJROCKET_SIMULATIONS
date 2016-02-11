@@ -157,27 +157,6 @@ public class threedCanvas extends Applet {
  	   group.compile();
  	   
  	   
-       // Transform the View Platform
- 	   /*
-	   Transform3D viewTransform = new Transform3D();
-	   Transform3D viewRotation1 = new Transform3D();
-	   Transform3D viewRotation2 = new Transform3D();
-	   viewRotation1.rotY(-0.5f);
-	   viewRotation2.rotX(0f);
-	   Vector3f viewTranslation = new Vector3f(0f, (float) (15 * r.getLength()), (float) (70 * r.getLength()));
-	   viewTransform.setTranslation(viewTranslation);
-	   */
-
- 	  /*
-	   viewRotation1.mul(viewRotation2);
-	   viewRotation1.mul(viewTransform);
-	   universe.getViewingPlatform().getViewPlatformTransform().setTransform(viewRotation1);	   
- 	   */
- 	   
- 	   
-
-
-	   // universe.getViewingPlatform().setNominalViewingTransform();
 
  	   universe.addBranchGraph(group);
  	   
