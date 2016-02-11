@@ -29,6 +29,11 @@ public class Simulate {
 		double total_time = 5;        // How long we do the simulation for
 		int    num_intervals = (int) (total_time/time_slice);
 		double g = 9.81;
+		int data_ticks = 100;   // i.e. for every tick (a tick being time_slice long, we get a measurement!)
+								// We do this to try and simulate a sensor that only returns information at a certain
+								// frequency. e.g. with time_slize = 0.0001, data_ticks = 100 ---> measurement every 0.01 seconds. 
+								// i.e 100Hz.
+		 
 
 		// Java 3-D
 		TransformGroup rocket_system = new TransformGroup();
@@ -201,7 +206,7 @@ public class Simulate {
 			
 
 			// SMOOTHER CONTROL
-			if (set_course == 0 && 
+			if ((n % data_ticks) == 0 && set_course == 0 && 
 					(Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > upper_velocity_threshold || Math.abs(180 * rotation_velocity_local.getEntry(2)/Math.PI) > upper_velocity_threshold)
 					) {
 
@@ -493,7 +498,7 @@ public class Simulate {
 			
 			// We try to see how the acceleration is going....do we need to back off a little
 			// i.e. we want to 'moderate' the deacceleration
-			if (set_course == 6) {
+			if ((n % data_ticks) == 0 && set_course == 6) {
 				// First make sure that acceleration is in opposite direction of velocity (i.e. it is slowing down)
 				if ((Math.signum(rotation_acceleration_local.getEntry(0)) * Math.signum(rotation_velocity_local.getEntry(0)) != -1 && Math.abs(180 * rotation_velocity_local.getEntry(0)/Math.PI) > upper_velocity_threshold) 
 						|| 
@@ -540,7 +545,7 @@ public class Simulate {
 				System.out.println("RESTING S2 ANGLE: " + s2.getAng_y());
 				
 				if (resting_angle_move <= 0 || (Math.abs(180 * rotation_acceleration_local.getEntry(0)/Math.PI) < 5 && Math.abs(180 * rotation_acceleration_local.getEntry(2)/Math.PI) < 5)) {
-					set_course = 10;
+					set_course = 0;
 					System.out.println("Back to a semi-stable state, " + resting_angle_move + ", " + Math.abs(rotation_acceleration_local.getEntry(0)) + ", " + Math.abs(rotation_acceleration_local.getEntry(2)));
 				}
 			}
