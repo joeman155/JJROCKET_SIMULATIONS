@@ -1,5 +1,9 @@
 package com.jtconsulting.jjrocket.kate;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
 
@@ -24,9 +28,32 @@ public class RotationSim {
 	 */
 	public static void main(String[] args) {
 		
+		boolean END_OF_FLIGHT = false;
+		long flight_duration = 8000;
 		double time_slice = 0.0001;   // How long each time slice is. 
 		double total_time = 5;        // How long we do the simulation for
 		int    num_intervals = (int) (total_time/time_slice);
+		
+		
+		// CSV FILE - LOAD DATA IN
+		String dataFile = "/tmp/data.csv";
+		BufferedReader br = null;
+		String line = "";
+		String csvSplitBy = ",";
+		
+		try {
+			br = new BufferedReader (new FileReader(dataFile));
+			while ((line = br.readLine()) != null) {
+				System.out.print(line);
+					
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
 		
 		// TIMING
 		BigDecimal interval = new BigDecimal(String.valueOf(time_slice));
@@ -68,10 +95,21 @@ public class RotationSim {
 		
 
 		System.out.println("Starting Iterations...");
-		for (int n = 0; n < num_intervals; n++) {
+		long current_time;
+		long milliseconds_since_flight;
+		long start_time = System.currentTimeMillis();
+		// for (int n = 0; n < num_intervals; n++) {
+		while (! END_OF_FLIGHT) {
+			current_time = System.currentTimeMillis();
+			milliseconds_since_flight = current_time - start_time;
 			
-			time = time.add(interval);
-			utils.debug(time, "Interval: " + n + ", Time = "+ time.toString());		
+			if (milliseconds_since_flight > flight_duration) {
+		    	END_OF_FLIGHT = true;
+		    }
+
+		    
+		    
+		    // Determine where we are up in the flight (referring to CSV data).
 		
 		
 			
