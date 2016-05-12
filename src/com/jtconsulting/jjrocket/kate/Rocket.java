@@ -267,6 +267,32 @@ public class Rocket {
 	public final void setCgz(double cgz) {
 		this.cgz = cgz;
 	}
+	public final void updateRotationMotionState(double new_rotx_vel, double new_roty_vel, double new_rotz_vel,
+			double time_slice) {
+		// ANGULAR MOTION
+		double old_ang_vx = this.getAng_vx();
+		double old_ang_vy = this.getAng_vy();
+		double old_ang_vz = this.getAng_vz();	
+		
+		// Set new Velocities
+		this.setAng_vx(new_rotx_vel);
+		this.setAng_vy(new_roty_vel);
+		this.setAng_vz(new_rotz_vel);
+		
+		// Calculate average velocity over this time slice.
+		double ang_vx_avg = (old_ang_vx + this.getAng_vx())/2;
+		double ang_vy_avg = (old_ang_vy + this.getAng_vy())/2;
+		double ang_vz_avg = (old_ang_vz + this.getAng_vz())/2;
+		
+		
+		// Calculate the change in orientation
+		this.setAng_x(this.getAng_x()   + time_slice * ang_vx_avg);
+		this.setAng_y(this.getAng_y()   + time_slice * ang_vy_avg);
+		this.setAng_z(this.getAng_z()   + time_slice * ang_vz_avg);
+		
+		
+		
+	}
 	public final void updateState(RealVector torque_vector, RealVector thrust_force_vector, 
 									double mass, double time_slice) {
 			
@@ -312,7 +338,6 @@ public class Rocket {
 		
 		
 		// ANGULAR MOTION
-		
 		double old_ang_vx = this.getAng_vx();
 		double old_ang_vy = this.getAng_vy();
 		double old_ang_vz = this.getAng_vz();

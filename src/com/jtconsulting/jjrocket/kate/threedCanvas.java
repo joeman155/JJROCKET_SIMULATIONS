@@ -39,7 +39,8 @@ public class threedCanvas extends Applet {
     /**
      * 
      */
-    public threedCanvas(TransformGroup tg_parent, TransformGroup viewTransformGroup, Rocket r)  { 
+    public threedCanvas(TransformGroup tg_parent, TransformGroup viewTransformGroup, Rocket r,
+    		int v1, int v2, int v3, int v4, int v5, int v6, int v7, int v8, int v9)  { 
         
         setLayout(new BorderLayout());
         GraphicsConfiguration config = 
@@ -57,7 +58,8 @@ public class threedCanvas extends Applet {
        TransformGroup viewTransform = viewingPlatform.getViewPlatformTransform();
   	   Transform3D view3d = new Transform3D();
   	   viewTransform.getTransform(view3d);
-  	   view3d.lookAt(new Point3d(52,16,52),  new Point3d(0,20,0),  new Vector3d(0,1,0));
+  	   // view3d.lookAt(new Point3d(52,16,52),  new Point3d(0,20,0),  new Vector3d(0,1,0));
+  	   view3d.lookAt(new Point3d(v1,v2,v3),  new Point3d(v4,v5,v6),  new Vector3d(v7,v8,v9));
   	   view3d.invert();
   	   viewTransform.setTransform(view3d);
   	   Viewer viewer = new Viewer(canvas);

@@ -155,7 +155,8 @@ public class Simulate {
 
 		
 		// Initialise 3D Canvas
-		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r);
+		// view3d.lookAt(new Point3d(52,16,52),  new Point3d(0,20,0),  new Vector3d(0,1,0));
+		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, 52, 16,52,0,20,0,0,1,0);
 		new MainFrame(canvas, 1280, 1024);
 		
 		System.out.println("time_no_more_adjustments: " + time_no_more_adjustments);		
