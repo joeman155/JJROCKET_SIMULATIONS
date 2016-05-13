@@ -5,6 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.media.j3d.Transform3D;
@@ -18,6 +21,7 @@ import org.apache.commons.math3.linear.RealVector;
 
 import com.jtconsulting.jjrocket.kate.utils;
 import com.jtconsulting.jjrocket.kate.threedCanvas;
+import com.jtconsulting.jjrocket.kate.rotationData;
 import com.sun.j3d.utils.applet.MainFrame;
 
 
@@ -30,12 +34,14 @@ public class RotationSim {
 		
 		boolean END_OF_FLIGHT = false;
 		long flight_duration = 8000;
-		double time_slice = 0.0001;   // How long each time slice is. 
-		double total_time = 5;        // How long we do the simulation for
-		int    num_intervals = (int) (total_time/time_slice);
+		double time_slice;   		  // How long each time slice is. 
+		double new_rotx_vel = 0;
+		double new_roty_vel = 0;
+		double new_rotz_vel = 0;
 		
 		
 		// CSV FILE - LOAD DATA IN
+		Map<Long, rotationData> rotMap = new HashMap<Long, rotationData>();
 		String dataFile = "/tmp/data.csv";
 		BufferedReader br = null;
 		String line = "";
@@ -44,7 +50,31 @@ public class RotationSim {
 		try {
 			br = new BufferedReader (new FileReader(dataFile));
 			while ((line = br.readLine()) != null) {
-				System.out.print(line);
+				// System.out.println(line);
+				String[] lineParts = line.split(csvSplitBy);
+				
+				/*
+				System.out.print(lineParts[0]);
+				System.out.print("   ");
+				System.out.print(lineParts[1]);
+				System.out.print("   ");
+				System.out.print(lineParts[2]);
+				System.out.print("   ");
+				System.out.println(lineParts[3]);
+				*/
+				
+				
+				double d1, d2, d3;
+				d1 = Double.parseDouble(lineParts[1]);
+				d2 = Double.parseDouble(lineParts[2]);
+				d3 = Double.parseDouble(lineParts[3]);
+				long l0;
+				l0 = Long.parseLong(lineParts[0]);
+				
+				rotationData d = new rotationData();
+				d.setRotation(d1, d2, d3);
+				rotMap.put(l0, d);
+				
 					
 			}
 		} catch (FileNotFoundException e) {
@@ -53,11 +83,27 @@ public class RotationSim {
 			e.printStackTrace();
 		}
 		
+		Object[] times = rotMap.keySet().toArray();
+		Arrays.sort(times);		
+		
+		
+		for (Object time : times) {
+			System.out.println("Key: " + time.toString());
+		}
+		/*
+		for (Map.Entry<String, rotationData> entry : rotMap.entrySet()) {
+			System.out.println("Key: " + entry.getKey());
+		}
+		*/
+			
+		
+
+		
 		
 		
 		// TIMING
-		BigDecimal interval = new BigDecimal(String.valueOf(time_slice));
-		BigDecimal time = new BigDecimal("0.0");		
+		// BigDecimal interval = new BigDecimal(String.valueOf(time_slice));
+		// BigDecimal time = new BigDecimal("0.0");		
 		
 		System.out.print("Rotation Simulation Starting...");
 		
@@ -79,7 +125,7 @@ public class RotationSim {
 		r.setPitch(Math.PI/2);
 		r.setYaw(0);
 		r.setRoll(0);
-		r.setPosition(0.3,0.5,0.3);
+		r.setPosition(0.0,0.0,0.0);
 //		r.setMotor(m1);
 		r.setAng_x(0);
 		r.setAng_y(0);
@@ -96,12 +142,17 @@ public class RotationSim {
 
 		System.out.println("Starting Iterations...");
 		long current_time;
-		long milliseconds_since_flight;
+		long milliseconds_since_flight = 0, milliseconds_since_flight_old = 0;
 		long start_time = System.currentTimeMillis();
+		long current_key = 0;
 		// for (int n = 0; n < num_intervals; n++) {
 		while (! END_OF_FLIGHT) {
 			current_time = System.currentTimeMillis();
+			
 			milliseconds_since_flight = current_time - start_time;
+			time_slice = (double) (milliseconds_since_flight - milliseconds_since_flight_old)/1000;
+			// System.out.println("Time slice: " + milliseconds_since_flight + ", " + milliseconds_since_flight_old + ", " + time_slice);
+			milliseconds_since_flight_old = milliseconds_since_flight;
 			
 			if (milliseconds_since_flight > flight_duration) {
 		    	END_OF_FLIGHT = true;
@@ -110,16 +161,37 @@ public class RotationSim {
 		    
 		    
 		    // Determine where we are up in the flight (referring to CSV data).
-		
+			long c1 = milliseconds_since_flight * 1000;
+			for (Object time : times) {
+				long c2 = Long.parseLong(time.toString());
+				// System.out.println("Comparing " + c1 + " with " + c2);
+				if (c2 > milliseconds_since_flight * 1000) {
+					
+					// Get rotational velocities				
+					long k = Long.parseLong(time.toString());
+					rotationData data = rotMap.get(k);
+					new_rotx_vel = data.getRot_vx();
+					new_roty_vel = data.getRot_vy();
+					new_rotz_vel = data.getRot_vz();
+					
+					// System.out.print("Key: " + time.toString());
+					// System.out.println("                      ------- " + rotMap.get(k).getRot_vx());
+					
+					break;
+				}
+			}
 		
 			
-			
-			double new_rotx_vel = 0.1;
+			/*
+			double new_rotx_vel = 0.5;
 			double new_roty_vel = 0;
 			double new_rotz_vel = 0;
+			*/
 			
 			// Update state of whole rocket
 			r.updateRotationMotionState(new_rotx_vel, new_roty_vel, new_rotz_vel, time_slice);			
+			
+			
 			
 			
 			// Update the Java 3-D calculations
@@ -142,6 +214,12 @@ public class RotationSim {
 			rocket_system.setTransform(translation);
 			
 			
+			try {
+				TimeUnit.MILLISECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}				
 		}
 		
 		

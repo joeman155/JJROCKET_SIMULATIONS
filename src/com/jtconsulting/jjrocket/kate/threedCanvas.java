@@ -86,6 +86,12 @@ public class threedCanvas extends Applet {
        group.addChild(light);
         
 
+ 	   // MATERIAL - Marking
+       Appearance red_ap = new Appearance();
+       Material red_ma = new Material();
+       red_ma.setDiffuseColor(1.0f, 0.0f, 0.0f);
+       red_ap.setMaterial(red_ma);
+       
 
  	   // MATERIAL - Rocket
        Appearance ap = new Appearance();
@@ -112,6 +118,12 @@ public class threedCanvas extends Applet {
  	   Cylinder rocket =  new Cylinder((float) r.getRadius_external() * 6, (float) r.getLength(), ap);
 
  	   
+ 	   // Line 
+ 	   LineArray line = new LineArray(2, LineArray.COORDINATES);
+ 	   line.setCoordinate(0, new Point3d(0d,  -r.getLength()/2, r.getRadius_external() * 6));
+ 	   line.setCoordinate(1, new Point3d(0d,  r.getLength()/2,  r.getRadius_external() * 6));
+ 	   Shape3D line_shape = new Shape3D(line, red_ap);
+ 	   
  	   
  	   // ENTIRE TRANSFORM GROUP
  	   //TransformGroup tg_parent = new TransformGroup();
@@ -128,11 +140,11 @@ public class threedCanvas extends Applet {
  	   
  
        // Y-Axis
- 	   Cylinder yaxis =  new Cylinder((float) 0.04, (float) 80, ap_axis);
+ 	   Cylinder yaxis =  new Cylinder((float) 0.02, (float) 80, ap_axis);
  	   axis.addChild(yaxis);
  	   
  	   // Y-Axis
- 	   Cylinder xaxis =  new Cylinder((float) 0.05, (float) 10, ap_axis);
+ 	   Cylinder xaxis =  new Cylinder((float) 0.02, (float) 10, ap_axis);
  	   TransformGroup xaxis_tg = new TransformGroup();
  	   Transform3D xaxis_rotation = new Transform3D();
  	   xaxis_rotation.rotZ(Math.PI/2);
@@ -141,7 +153,7 @@ public class threedCanvas extends Applet {
  	   axis.addChild(xaxis_tg); 	   
 
  	   // Z-Axis
- 	   Cylinder zaxis =  new Cylinder((float) 0.05, (float) 10, ap_axis);
+ 	   Cylinder zaxis =  new Cylinder((float) 0.02, (float) 10, ap_axis);
  	   TransformGroup zaxis_tg = new TransformGroup();
  	   Transform3D zaxis_rotation = new Transform3D();
  	   zaxis_rotation.rotX(Math.PI/2);
@@ -154,6 +166,7 @@ public class threedCanvas extends Applet {
  	   // Combining all Transform Groups
  	   tg_parent.addChild(tg_top);
  	   tg_top.addChild(rocket);
+ 	   tg_top.addChild(line_shape);
  	   group.addChild(tg_parent);
  	   group.addChild(axis);
  	   group.compile();
