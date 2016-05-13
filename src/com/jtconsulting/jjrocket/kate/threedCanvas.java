@@ -80,7 +80,8 @@ public class threedCanvas extends Applet {
  	   // LIGHT
        DirectionalLight light = new DirectionalLight( true,
                new Color3f(1.0f, 1.0f, 1.0f),
-               new Vector3f(-2.0f, -2.0f, -2.0f));
+               new Vector3f(4.0f, -3.0f, 3.0f));
+       // new Vector3f(-2.0f, -2.0f, -2.0f));
  	   // AmbientLight light = new AmbientLight(new Color3f(1.0f, 1.0f, 1.0f));
        light.setInfluencingBounds(new BoundingSphere(new Point3d(), 2100.0));	          
        group.addChild(light);
@@ -120,8 +121,8 @@ public class threedCanvas extends Applet {
  	   
  	   // Line 
  	   LineArray line = new LineArray(2, LineArray.COORDINATES);
- 	   line.setCoordinate(0, new Point3d(0d,  -r.getLength()/2, r.getRadius_external() * 6));
- 	   line.setCoordinate(1, new Point3d(0d,  r.getLength()/2,  r.getRadius_external() * 6));
+ 	   line.setCoordinate(0, new Point3d(0d,  -r.getLength()/2, -r.getRadius_external() * 6));
+ 	   line.setCoordinate(1, new Point3d(0d,  r.getLength()/2,  -r.getRadius_external() * 6));
  	   Shape3D line_shape = new Shape3D(line, red_ap);
  	   
  	   

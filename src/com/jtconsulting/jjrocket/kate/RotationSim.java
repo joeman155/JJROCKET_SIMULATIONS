@@ -50,7 +50,6 @@ public class RotationSim {
 		try {
 			br = new BufferedReader (new FileReader(dataFile));
 			while ((line = br.readLine()) != null) {
-				// System.out.println(line);
 				String[] lineParts = line.split(csvSplitBy);
 				
 				/*
@@ -87,23 +86,13 @@ public class RotationSim {
 		Arrays.sort(times);		
 		
 		
+		/*
 		for (Object time : times) {
 			System.out.println("Key: " + time.toString());
 		}
-		/*
-		for (Map.Entry<String, rotationData> entry : rotMap.entrySet()) {
-			System.out.println("Key: " + entry.getKey());
-		}
-		*/
-			
-		
+		*/		
 
 		
-		
-		
-		// TIMING
-		// BigDecimal interval = new BigDecimal(String.valueOf(time_slice));
-		// BigDecimal time = new BigDecimal("0.0");		
 		
 		System.out.print("Rotation Simulation Starting...");
 		
@@ -136,7 +125,7 @@ public class RotationSim {
 		
 		
 		// Initialise 3D Canvas
-		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, 5, 5,5,0,0,0,0,1,0);
+		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, -7, 3, -3,0,0,0,0,1,0);
 		new MainFrame(canvas, 1280, 1024);
 		
 
@@ -151,7 +140,7 @@ public class RotationSim {
 			
 			milliseconds_since_flight = current_time - start_time;
 			time_slice = (double) (milliseconds_since_flight - milliseconds_since_flight_old)/1000;
-			// System.out.println("Time slice: " + milliseconds_since_flight + ", " + milliseconds_since_flight_old + ", " + time_slice);
+			System.out.println("Flight Time: " + milliseconds_since_flight);
 			milliseconds_since_flight_old = milliseconds_since_flight;
 			
 			if (milliseconds_since_flight > flight_duration) {
@@ -182,11 +171,6 @@ public class RotationSim {
 			}
 		
 			
-			/*
-			double new_rotx_vel = 0.5;
-			double new_roty_vel = 0;
-			double new_rotz_vel = 0;
-			*/
 			
 			// Update state of whole rocket
 			r.updateRotationMotionState(new_rotx_vel, new_roty_vel, new_rotz_vel, time_slice);			
