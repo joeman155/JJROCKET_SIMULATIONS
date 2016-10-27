@@ -9,13 +9,20 @@ import org.apache.commons.math3.linear.RealVector;
 public class utils {
 
 	
-	public static RealMatrix createRotationMatrix(double roll, double pitch, double yaw) {
+	// This uses Tait-Bryan angles Z1X2Y3
+	// 
+	// See https://en.wikipedia.org/wiki/Euler_angles#Intrinsic_rotations
+	//
+	// Go to the "Rotation matrix" section and find it on the right.
+	//
+	public static RealMatrix createRotationMatrix(double xaxis, double yaxis, double zaxis) {
 		// Note, roll is really rotation around X-Axis
 		//       pitch is really rotation around Y-Axis
 		//       yaw is really rotation around Z-Axis
 		double c1, c2, c3;  // Cosine of roll (1), pitch (2), yaw (3)
 		double s1, s2, s3;  // Sine of roll (1), pitch (2), yaw (3)
 		
+		/*
 		c1 = Math.cos(roll);
 		c2 = Math.cos(pitch);
 		c3 = Math.cos(yaw);
@@ -29,8 +36,24 @@ public class utils {
 		        {s3 * c2,  (c3 * c1 + s3 * s2 * s1), (s3 * s2 * c1 - c3 * s1)},
 		        {(-s2)  ,  (s1 * c2),                (c2 * c1)}
 		        };
+		*/
 		
-		RealMatrix matrix = MatrixUtils.createRealMatrix(matrix_data);
+		
+		
+		c1 = Math.cos(zaxis);
+		c2 = Math.cos(xaxis);
+		c3 = Math.cos(yaxis);
+		s1 = Math.sin(zaxis);
+		s2 = Math.sin(xaxis);
+		s3 = Math.sin(yaxis);
+		
+		double rotation_matrix_data[][] = { 
+				{(c1 * c3 - s1 *s2 * s3), (-c2 * s1), (c1 * s3 + c3 * s1 * s2)   },
+				{(c3 * s1 + c1 *s2 * s3), (c1 * c2) , (s1 * s3 - c1 * c3 * s2)   },
+				{(-c2 * s3)             , (s2)      , (c2 * c3)}
+		};	
+		
+		RealMatrix matrix = MatrixUtils.createRealMatrix(rotation_matrix_data);
 		
 		return matrix;
 	}
@@ -82,6 +105,9 @@ public class utils {
 				{m.getEntry(2, 0), m.getEntry(2, 1), m.getEntry(2, 2)  }
 		};
 		
+		// System.out.println(m.getEntry(0, 0)+ ", " + m.getEntry(0, 1) + ", " + m.getEntry(0, 2));
+		// System.out.println(m.getEntry(1, 0)+ ", " + m.getEntry(1, 1) + ", " + m.getEntry(1, 2));
+		// System.out.println(m.getEntry(2, 0)+ ", " + m.getEntry(2, 1) + ", " + m.getEntry(2, 2));
 		
 		double[] vd = {v.getEntry(0), v.getEntry(1), v.getEntry(2)};
 		

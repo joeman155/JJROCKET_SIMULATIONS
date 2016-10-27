@@ -13,6 +13,7 @@ import javax.media.j3d.Canvas3D;
 import javax.media.j3d.DirectionalLight;
 import javax.media.j3d.LineArray;
 import javax.media.j3d.Material;
+import javax.media.j3d.PointLight;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
@@ -78,11 +79,16 @@ public class threedCanvas extends Applet {
  	   
  	   
  	   // LIGHT
-       DirectionalLight light = new DirectionalLight( true,
-               new Color3f(1.0f, 1.0f, 1.0f),
-               new Vector3f(4.0f, -3.0f, 3.0f));
+       //DirectionalLight light = new DirectionalLight( true,
+       //        new Color3f(1.0f, 1.0f, 1.0f),
+       //        new Vector3f(4.0f, -3.0f, 3.0f));
        // new Vector3f(-2.0f, -2.0f, -2.0f));
  	   // AmbientLight light = new AmbientLight(new Color3f(1.0f, 1.0f, 1.0f));
+ 	   PointLight light = new PointLight();
+ 	   light.setPosition(new Point3f(20.0f, 6.0f, 20.0f));
+ 	   light.setColor(new Color3f(1.0f, 1.0f, 1.0f));
+ 	   light.setAttenuation(1.0f, 0.0f, 0.0f);
+
        light.setInfluencingBounds(new BoundingSphere(new Point3d(), 2100.0));	          
        group.addChild(light);
         
@@ -141,11 +147,11 @@ public class threedCanvas extends Applet {
  	   
  
        // Y-Axis
- 	   Cylinder yaxis =  new Cylinder((float) 0.02, (float) 80, ap_axis);
+ 	   Cylinder yaxis =  new Cylinder((float) 0.08, (float) 80, ap_axis);
  	   axis.addChild(yaxis);
  	   
  	   // Y-Axis
- 	   Cylinder xaxis =  new Cylinder((float) 0.02, (float) 10, ap_axis);
+ 	   Cylinder xaxis =  new Cylinder((float) 0.08, (float) 60, ap_axis);
  	   TransformGroup xaxis_tg = new TransformGroup();
  	   Transform3D xaxis_rotation = new Transform3D();
  	   xaxis_rotation.rotZ(Math.PI/2);
@@ -154,7 +160,7 @@ public class threedCanvas extends Applet {
  	   axis.addChild(xaxis_tg); 	   
 
  	   // Z-Axis
- 	   Cylinder zaxis =  new Cylinder((float) 0.02, (float) 10, ap_axis);
+ 	   Cylinder zaxis =  new Cylinder((float) 0.02, (float) 60, ap_axis);
  	   TransformGroup zaxis_tg = new TransformGroup();
  	   Transform3D zaxis_rotation = new Transform3D();
  	   zaxis_rotation.rotX(Math.PI/2);

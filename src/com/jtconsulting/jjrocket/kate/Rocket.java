@@ -416,21 +416,33 @@ public class Rocket {
 	}
 
 	
+	
+	/* Computes the Centre of Gravity
+	 * 
+	 * It takes into account the 
+	 * - rocket
+	 * - motor
+	 * - The smoother masses
+	 * 
+	 * The CG is relative to a fixed point on the bottom of the rocket
+	 * It is in the local-frame-point of the rocket (i.e. it doesn't include rotation of the rocket).
+	 */
 	public void computeCg() {
 		
 		double cy = (this.getMotor().getMass() * this.getMotor().getLen()/2 + this.getLength() * this.getMass()/2 + this.smoother1.getMass() * this.smoother1.getY() + this.smoother2.getMass() * this.smoother2.getY());
 		cy = cy/(this.getMotor().getMass() + this.getMass() + this.smoother1.getMass() + this.smoother2.getMass());
 		
+		// System.out.println("ARRRRRRR  = " + 180 * this.smoother1.getAng_y()/ Math.PI);		
 		
 		double c1, c2, s1, s2;
 		c1 = Math.cos(this.smoother1.getAng_y());
-		c1 = (double) Math.round(c1 * 1000d) / 1000d;
+		c1 = (double) Math.round(c1 * 10000d) / 10000d;
 		c2 = Math.cos(this.smoother2.getAng_y());
-		c2 = (double) Math.round(c2 * 1000d) / 1000d;
+		c2 = (double) Math.round(c2 * 10000d) / 10000d;
 		s1 = Math.sin(this.smoother1.getAng_y());
-		s1 = -(double) Math.round(s1 * 1000d) / 1000d;  // Make negative to correct direction
+		s1 = -(double) Math.round(s1 * 10000d) / 10000d;  // Make negative to correct direction
 		s2 = Math.sin(this.smoother2.getAng_y());
-		s2 = -(double) Math.round(s2 * 1000d) / 1000d;  // Make negative to correct direction
+		s2 = -(double) Math.round(s2 * 10000d) / 10000d;  // Make negative to correct direction
 		
 		double cx = (this.smoother1.getMass() * this.smoother1.getR() * c1 + this.smoother2.getMass() * this.smoother2.getR() * c2);
 		cx = cx/(this.smoother1.getMass() + this.smoother2.getMass() + this.getMass() + this.motor.getMass());
@@ -499,23 +511,57 @@ public class Rocket {
 	}
 	
 	
+	
+	// This uses Tait-Bryan angles Z1X2Y3
+	// 
+	// See https://en.wikipedia.org/wiki/Euler_angles#Intrinsic_rotations
+	//
+	// Go to the "Rotation matrix" section and find it on the right.
+	// 
+	// Note in the WIKI doc, 1 = alpha = Rotation about the Z-Axis
+	//                       2 = beta  = Rotation about the X-Axis
+	//                       3 = gamma = Rotation about the Y-Axis
+	//
+	// We used this rotation matrix because the last rotation (about the y-axis)
+	// results in no change in the Thrust vector. This is necessary because as
+	// the rocket rotates (about the y-Axis), it can't cause a change in the thrust
+	// vector.
+	// 
+	// So just flip 1 and 3 around.
 	public RealMatrix getRotationMatrix() {
 		RealMatrix rotation_matrix;
 		double c1, c2, c3;  // Cosine of roll (1), pitch (2), yaw (3)
 		double s1, s2, s3;  // Sine of roll (1), pitch (2), yaw (3)
 		
+		/*
 		c1 = Math.cos(this.getAng_x());
 		c2 = Math.cos(this.getAng_y());
 		c3 = Math.cos(this.getAng_z());
 		s1 = Math.sin(this.getAng_x());
 		s2 = Math.sin(this.getAng_y());
 		s3 = Math.sin(this.getAng_z());
+		*/ 
 		
+		/*
 		double rotation_matrix_data[][] = { 
 				{(c3 * c2), (s1 * c3 * s2 - c1 * s3), (s1 * s3 + c1 * c3 * s2)   },
 				{(s3 * c2), (c3 * c1 + s3 * s2 * s1), (s3 * s2 * c1 - c3 * s1)   },
 				{(-s2)    , (s1 * c2),                (c2 * c1)}
 		};
+		*/
+		
+		c1 = Math.cos(this.getAng_z());
+		c2 = Math.cos(this.getAng_x());
+		c3 = Math.cos(this.getAng_y());
+		s1 = Math.sin(this.getAng_z());
+		s2 = Math.sin(this.getAng_x());
+		s3 = Math.sin(this.getAng_y());
+		
+		double rotation_matrix_data[][] = { 
+				{(c1 * c3 - s1 *s2 * s3), (-c2 * s1), (c1 * s3 + c3 * s1 * s2)   },
+				{(c3 * s1 + c1 *s2 * s3), (c1 * c2) , (s1 * s3 - c1 * c3 * s2)   },
+				{(-c2 * s3)             , (s2)      , (c2 * c3)}
+		};		
 		
 		rotation_matrix = MatrixUtils.createRealMatrix(rotation_matrix_data);
 		

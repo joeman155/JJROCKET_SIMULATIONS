@@ -42,7 +42,7 @@ public class RotationSim {
 		
 		// CSV FILE - LOAD DATA IN
 		Map<Long, rotationData> rotMap = new HashMap<Long, rotationData>();
-		String dataFile = "/tmp/data.csv";
+		String dataFile = "c:\\tmp\\data.csv";
 		BufferedReader br = null;
 		String line = "";
 		String csvSplitBy = ",";
