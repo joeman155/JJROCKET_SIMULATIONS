@@ -36,8 +36,26 @@ public class Simulate {
 								// frequency. e.g. with time_slize = 0.0001, data_ticks = 100 ---> measurement every 0.01 seconds. 
 								// i.e 100Hz.
 		
+		// Properties used in calculation of Drag and Lift
 		double Cd = 0.75;
-		double density = 1.225;
+		
+		// Density at sea level
+		// double density = 1.225;
+		
+		// Density at approx 30km up
+		double density = 0.01841;
+				
+		// Density at approx 40km up
+		// double density = 0.03996;
+				
+		// Density at approx 60km up
+		// double density = 0.003097;
+		
+		// Density at approx 80km up
+		// double density = 0.0001846;
+		
+		
+		
 		int y_intercept = 54;
 		int multiplier = 12;	// How far away we are from rocket
 		boolean launch_detect;
@@ -271,7 +289,22 @@ public class Simulate {
 			// LIFT CALCS - (on the fins) - VERY basic....just using something cobbled together from FoilSim
 			double gammaval = 2*1* Math.sin(angle_of_attack);
 			double clift = gammaval * 4 * 3.1415 /0.328;   
-			double lift = -2 *  4.44 * (clift * 25.49 * 0.107584);
+			double q0 = 0.5 * density * 0.0193* r.getVy() * r.getVy() * 3.28 * 3.28;
+			// 0.5 = constant
+			// density = density in kg/m^3
+			// 0.193 = convert kg/M^3 to slugs/ft^3
+			// r.getVy = approximate stream velocity
+			// 3.28 used to convert stream velocity to ft/second
+			
+			double lift = -2 *  4.44 * (clift * q0* 0.107584 * 0.5);
+			
+			
+			// - = corrects direction
+			// 2 = for two fins
+			// 4.44 converts Pounds Force to Newtons
+			// 25.49 = q0 = ....
+			// 0.107584 = area of a fin (approx 10cm x 10cm) 0.328 * 0.328 = 0.1075ft^2  (if square)
+			// 0.5 ... because fins are triangular.....so half a square
 			
 			utils.debug(time, "Fin Lift:   " + lift + " Newtons");
 			
