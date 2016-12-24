@@ -169,6 +169,20 @@ public class Rocket {
 	public final double getZ() {
 		return z;
 	}
+	
+	public final double getArea() {
+		return this.getRadius_external() * this.getRadius_external() * Math.PI;
+	}
+	
+	public final double getAngleOfAttack() {
+		double angle_of_attack = 0;
+		
+		// We get the angle by using the dot-product of two vectors.
+		// One vector is the orientation vector, the other is the Velocity vector
+		
+		
+		return angle_of_attack;
+	}
 	public final void setZ(double z) {
 		this.z = z;
 	}

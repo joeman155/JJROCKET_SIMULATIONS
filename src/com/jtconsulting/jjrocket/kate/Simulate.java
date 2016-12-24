@@ -35,12 +35,15 @@ public class Simulate {
 								// We do this to try and simulate a sensor that only returns information at a certain
 								// frequency. e.g. with time_slize = 0.0001, data_ticks = 100 ---> measurement every 0.01 seconds. 
 								// i.e 100Hz.
-		 
-		int multiplier = 5;		// How far away we are from rocket
+		
+		double Cd = 0.75;
+		double density = 1.225;
+		int y_intercept = 54;
+		int multiplier = 12;	// How far away we are from rocket
 		boolean launch_detect;
 		boolean servo_move;
 		boolean track_mode;
-		double reference_angle;     // The angle we want to maintain in regards to the direction of the masses
+		double reference_angle; // The angle we want to maintain in regards to the direction of the masses
 		launch_detect = false;  // Set true at 0.1 seconds...bit of a hack...we expect launch to be detected no more than 0.1 seconds after launch
 		servo_move = false;     // Set true after we move the servo!
 		track_mode = false;     // Set true when we are trying to counteract the motion of the rocket around the y-Axis.
@@ -80,7 +83,7 @@ public class Simulate {
 		*/
 		
 		
-		
+/*		
 		// 125G131-14A (SS)
 		double motor_burn_duration = 0.9;
 		Motor m1 = new Motor();
@@ -93,6 +96,22 @@ public class Simulate {
 		m1.setPeek_thrust_end_time(0.875);
 		m1.setNorm_thrust(0);
 		m1.setNorm_thrust_start_time(0.88);
+		m1.setNorm_thrust_end_time(motor_burn_duration);
+		m1.setIgnition_delay(0.0);
+*/		
+		
+		// G67G-6
+		double motor_burn_duration = 1.725;
+		Motor m1 = new Motor();
+		m1.setLen(0.187);
+		m1.setRadius(0.015);
+		m1.setMass_nonfuel(0.087);
+		m1.setMass_fuel(0.06);
+		m1.setPeak_thrust(150);
+		m1.setPeek_thrust_start_time(0.05);
+		m1.setPeek_thrust_end_time(0.07);
+		m1.setNorm_thrust(0);
+		m1.setNorm_thrust_start_time(1.720);
 		m1.setNorm_thrust_end_time(motor_burn_duration);
 		m1.setIgnition_delay(0.0);
 		
@@ -115,7 +134,7 @@ public class Simulate {
 		r.setAng_y(0);
 		r.setAng_z(0);
 		r.setAng_vx(0);
-		r.setAng_vy(Math.PI);
+		r.setAng_vy(0);
 		r.setAng_vz(0);
 		
 		
@@ -169,7 +188,7 @@ public class Simulate {
 		// Initialise 3D Canvas
 		// view3d.lookAt(new Point3d(52,16,52),  new Point3d(0,20,0),  new Vector3d(0,1,0));
 		// threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, 52, 16,52,0,20,0,0,1,0);
-		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, 15 * multiplier, 1 * multiplier,15 * multiplier, 0,22,0, 0,1,0);
+		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, 15 * multiplier, 1 * multiplier,15 * multiplier, 0,y_intercept,0, 0,1,0);
 		new MainFrame(canvas, 1280, 1024);
 		
 		System.out.println("time_no_more_adjustments: " + time_no_more_adjustments);		
@@ -209,7 +228,14 @@ public class Simulate {
 			double angle_deviation3 =   0.00;	
 			double[] thrust_force_angles = {Math.PI * angle_deviation1/180, Math.PI * angle_deviation2/180, Math.PI * angle_deviation3/180};
 
-			double[] perfect_thrust = {0, thrust, 0};
+			
+			// DRAG
+			double drag_force_amount = 0.5 * density * r.getArea() * r.getVy() * r.getVy() * Cd;
+			utils.debug(time, "Drag is:   "  + drag_force_amount);
+			
+			
+			// MOTOR THRUST minus Drag
+			double[] perfect_thrust = {0, thrust - drag_force_amount, 0};
 			RealVector perfect_thrust_vector = MatrixUtils.createRealVector(perfect_thrust);
 			RealMatrix rotation_matrix = utils.createRotationMatrix(thrust_force_angles[0], thrust_force_angles[1], thrust_force_angles[2]);
 			RealVector thrust_force_vector = utils.matrixVectorMultiply(rotation_matrix,  perfect_thrust_vector);
@@ -219,6 +245,58 @@ public class Simulate {
 			RealVector thrust_force_vector_global = utils.matrixVectorMultiply(r.getRotationMatrix(), thrust_force_vector);
 			utils.debug(time, "Global Force Vector is:   "  + thrust_force_vector_global.getEntry(0) + ", " + thrust_force_vector_global.getEntry(1) + ", " + thrust_force_vector_global.getEntry(2));
 
+			
+			
+			// Get Angle of attack - THIS IS NOT GENERIC CODE - IT ASSUMES ROCKET only rotates about the X-axis as
+			// it takes off
+			//
+			//
+			// Incorrect code...kept for inspiration
+			// double angle_of_attack = utils.DotProductAngle(Math.cos(r.getAng_x()), r.getAng_y(),r.getAng_z(),
+			// 												Math.cos(r.getAng_vx()), r.getAng_vy(), r.getAng_vz());
+			
+			// utils.debug(time,  "vector1 = " + r.getAng_x() + "," + r.getAng_y() + "," + r.getAng_z());
+			// utils.debug(time,  "vector2 = " + r.getAng_vx() + "," + r.getAng_vy() + "," + r.getAng_vz());
+			
+			// Ignoring any wind...compare direction of orientation of rocket with its motion...get difference in angle
+			double angle_of_attack;
+			if (r.getVy() != 0) {
+			    angle_of_attack = r.getAng_x() - (Math.atan(r.getVz()/r.getVy()));
+			} else {
+				angle_of_attack = 0;
+			}
+			utils.debug(time, "angle_of_attack is:   " + angle_of_attack * 180/Math.PI);
+			
+			
+			// LIFT CALCS - (on the fins) - VERY basic....just using something cobbled together from FoilSim
+			double gammaval = 2*1* Math.sin(angle_of_attack);
+			double clift = gammaval * 4 * 3.1415 /0.328;   
+			double lift = -2 *  4.44 * (clift * 25.49 * 0.107584);
+			
+			utils.debug(time, "Fin Lift:   " + lift + " Newtons");
+			
+			// Torque is in the X direction, no other component (assuming rocket is not rotating)
+			double distance_to_cg = 0.5;   // Taken from OpenRocket of Callisto
+			double fin_lift_torque = lift * distance_to_cg;
+			utils.debug(time, "Fin Lift Torque:   " + fin_lift_torque + " Newtons.metres");
+			
+			
+			
+					
+			/*
+			// DRAG
+			double drag_force_amount = 0.5 * r.getArea() * r.getVy() * r.getVy() * Cd;
+			double[] drag_force = {0, -drag_force_amount, 0};
+			utils.debug(time, "Drag is:   "  + drag_force_amount);
+			RealVector drag_vector = MatrixUtils.createRealVector(drag_force);
+			RealVector drag_force_vector = utils.matrixVectorMultiply(rotation_matrix,  drag_vector);
+					
+			// Deduce the DRAG force in global co-ordinate system
+			RealVector drag_force_vector_global = utils.matrixVectorMultiply(r.getRotationMatrix(), drag_force_vector);
+			utils.debug(time, "Drag Force Vector is:   "  + drag_force_vector_global.getEntry(0) + ", " + drag_force_vector_global.getEntry(1) + ", " + drag_force_vector_global.getEntry(2));
+			*/
+			
+			
 			
 			// Compute CG - and get a vector for it - taking into account rotation of the rocket
 			r.computeCg();
@@ -230,6 +308,19 @@ public class Simulate {
 			
 			// Compute moment generated by the thrust. Cross product
 			RealVector torque_vector = utils.crossProduct(thrust_force_vector_global, cg_vector_global);
+			
+			//
+			// Add Torque from fins to the torque caused by the Masses....we should see that the fins torque 
+			// Stabilises the motion of the rocket...and it does seems to quite well.
+			// The rocket goes 'crazy' at end of cals, but suspect this is due to some modelling issue.
+			//
+			double x_torque = torque_vector.getEntry(0);
+			utils.debug(time, "OLD X toruqe = " + x_torque); 
+			x_torque = x_torque + fin_lift_torque;
+			utils.debug(time, "NEW X toruqe = " + x_torque); 
+			torque_vector.setEntry(0, x_torque);
+			
+			
 			utils.debug(time, "MOMENT      - mx  = " + torque_vector.getEntry(0) + ", my   = " + torque_vector.getEntry(1) + ", mz  = " + torque_vector.getEntry(2) + " Nm");
 
 			

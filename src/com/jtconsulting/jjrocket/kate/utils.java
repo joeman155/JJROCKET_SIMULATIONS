@@ -58,6 +58,18 @@ public class utils {
 		return matrix;
 	}
 	
+	public static double DotProductAngle(double x1, double y1, double z1,
+			                      double x2, double y2, double z2) {
+		
+		double angle;
+		double vector_1_mag = Math.pow(x1 * x1 + y1 * y1 + z1* z1,  0.5);
+		double vector_2_mag = Math.pow(x2 * x2 + y2 * y2 + z2* z2,  0.5);
+		
+		angle = Math.acos((x1 * x2 + y1 * y2 + z1 * z2)/(vector_1_mag * vector_2_mag));
+		
+		return angle;
+	}
+	
 	public static RealVector revolveVector(double roll, double pitch, double yaw, RealVector vec1) {
 	
 		double c1, c2, c3;  // Cosine of roll (1), pitch (2), yaw (3)
