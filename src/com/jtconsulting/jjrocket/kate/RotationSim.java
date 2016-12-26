@@ -33,15 +33,22 @@ public class RotationSim {
 	public static void main(String[] args) {
 		
 		boolean END_OF_FLIGHT = false;
-		long flight_duration = 8000;
+		long flight_duration = 16000;
 		double time_slice;   		  // How long each time slice is. 
 		double new_rotx_vel = 0;
 		double new_roty_vel = 0;
 		double new_rotz_vel = 0;
+		double new_ax = 0;
+		double new_ay = 0;
+		double new_az = 0;		
+		
+		int y_intercept = 0;   // Where on y-Axis it starts
+		int multiplier = 4;	// How far away we are from rocket
 		
 		
 		// CSV FILE - LOAD DATA IN
 		Map<Long, rotationData> rotMap = new HashMap<Long, rotationData>();
+		Map<Long, accelerationData> accMap = new HashMap<Long, accelerationData>();
 		String dataFile = "c:\\tmp\\data.csv";
 		BufferedReader br = null;
 		String line = "";
@@ -63,16 +70,37 @@ public class RotationSim {
 				*/
 				
 				
-				double d1, d2, d3;
+				// d1, d2, d3 = Rotation rates (radians per second)
+				// e1, e2, e3 = Acceleration rates ms-2
+				double d1, d2, d3, e1, e2, e3;
 				d1 = Double.parseDouble(lineParts[1]);
 				d2 = Double.parseDouble(lineParts[2]);
 				d3 = Double.parseDouble(lineParts[3]);
+				
+				
+				// If there are 3 more numbers after the rotation rates, then these are treated as 
+				// acceleration numbers....but only retrieve and process these if they are there.
+				e1 = 0;
+				e2 = 0;
+				e3 = 0;
+				try {
+					e1 = Double.parseDouble(lineParts[4]);
+					e2 = Double.parseDouble(lineParts[5]);
+					e3 = Double.parseDouble(lineParts[6]);
+				} catch(Exception e) {
+				}
+				
+			
 				long l0;
 				l0 = Long.parseLong(lineParts[0]);
 				
-				rotationData d = new rotationData();
+				
+				rotationData     d = new rotationData();
+				accelerationData e = new accelerationData();
 				d.setRotation(d1, d2, d3);
+				e.setAcceleration(e1, e2, e3);
 				rotMap.put(l0, d);
+				accMap.put(l0, e);
 				
 					
 			}
@@ -119,13 +147,26 @@ public class RotationSim {
 		r.setAng_x(0);
 		r.setAng_y(0);
 		r.setAng_z(0);
-		r.setAng_vx(0.1);
+		r.setAng_vx(0);
 		r.setAng_vy(0);
 		r.setAng_vz(0);		
 		
+		new_ax = 0; new_ay = 10; new_az = 0;
+		double[] local_accel1 = {new_ax, new_ay, new_az};
+		System.out.println("Orig x, y, z = " + new_ax + "," + new_ay + ","  + new_az);
+		RealVector local_accel_vector1 = MatrixUtils.createRealVector(local_accel1);
+		RealVector global_accel_vector1 = utils.matrixVectorMultiply(r.getRotationMatrix(), local_accel_vector1);
+		
+		
+		new_ax = global_accel_vector1.getEntry(0);
+		new_ay = global_accel_vector1.getEntry(1);
+		new_az = global_accel_vector1.getEntry(2);
+		
+		System.out.println("FINAL x, y, z = " + new_ax + "," + new_ay + ","  + new_az);
 		
 		// Initialise 3D Canvas
-		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, -7, 3, -3,0,0,0,0,1,0);
+		// threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, -7, 3, -3,0,0,0,0,1,0);
+		threedCanvas canvas = new threedCanvas(rocket_system, viewTransformGroup, r, 5 * multiplier, 1 * multiplier,5 * multiplier, 0,y_intercept,0, 0,1,0);
 		new MainFrame(canvas, 1280, 1024);
 		
 
@@ -151,17 +192,61 @@ public class RotationSim {
 		    
 		    // Determine where we are up in the flight (referring to CSV data).
 			long c1 = milliseconds_since_flight * 1000;
+			
+
+			
+			
 			for (Object time : times) {
 				long c2 = Long.parseLong(time.toString());
+				
+				// Reset values to zero...so it doesn't keep moving after data points
+				new_rotx_vel = 0; new_roty_vel = 0; new_rotz_vel = 0;
+				new_ax = new_ay = new_az = 0;
+				
 				// System.out.println("Comparing " + c1 + " with " + c2);
 				if (c2 > milliseconds_since_flight * 1000) {
 					
 					// Get rotational velocities				
 					long k = Long.parseLong(time.toString());
-					rotationData data = rotMap.get(k);
-					new_rotx_vel = data.getRot_vx();
-					new_roty_vel = data.getRot_vy();
-					new_rotz_vel = data.getRot_vz();
+					rotationData rotdata = rotMap.get(k);
+					new_rotx_vel = rotdata.getRot_vx();
+					new_roty_vel = rotdata.getRot_vy();
+					new_rotz_vel = rotdata.getRot_vz();
+					
+					accelerationData accdata = accMap.get(k);
+					new_ax       = accdata.getax();
+					new_ay       = accdata.getay();
+					new_az       = accdata.getaz();
+					System.out.println("Orig x, y, z = " + new_ax + "," + new_ay + ","  + new_az);
+					
+					double[] local_accel = {new_ax, new_ay, new_az};
+					RealVector local_accel_vector = MatrixUtils.createRealVector(local_accel);
+					RealVector global_accel_vector = utils.matrixVectorMultiply(r.getRotationMatrix(), local_accel_vector);
+					
+					
+					new_ax = global_accel_vector.getEntry(0);
+					new_ay = global_accel_vector.getEntry(1);
+					new_az = global_accel_vector.getEntry(2);
+					System.out.println("FINAL x, y, z = " + new_ax + "," + new_ay + ","  + new_az);
+					
+/*					
+					if (Math.abs(new_ax) < 1 ) {
+						new_ax = 0;
+					}
+					
+					if (Math.abs(new_ay) < 1 ) {
+						new_ay = 0;
+					}
+					
+					if (Math.abs(new_az) < 1 ) {
+						new_az = 0;
+					}
+*/
+					
+
+					
+					
+					
 					
 					// System.out.print("Key: " + time.toString());
 					// System.out.println("                      ------- " + rotMap.get(k).getRot_vx());
@@ -173,7 +258,9 @@ public class RotationSim {
 			
 			
 			// Update state of whole rocket
-			r.updateRotationMotionState(new_rotx_vel, new_roty_vel, new_rotz_vel, time_slice);			
+			r.updateRotationMotionState(new_rotx_vel, new_roty_vel, new_rotz_vel, 
+					                    new_ax,       new_ay,       new_az, 
+					                    time_slice);			
 			
 			
 			

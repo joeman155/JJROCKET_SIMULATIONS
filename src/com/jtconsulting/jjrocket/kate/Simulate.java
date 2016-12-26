@@ -39,11 +39,13 @@ public class Simulate {
 		// Properties used in calculation of Drag and Lift
 		double Cd = 0.75;
 		
+		double fin_area_scale_factor = 1;
+		
 		// Density at sea level
-		// double density = 1.225;
+		double density = 1.225;
 		
 		// Density at approx 30km up
-		double density = 0.01841;
+		// double density = 0.01841;
 				
 		// Density at approx 40km up
 		// double density = 0.03996;
@@ -296,7 +298,7 @@ public class Simulate {
 			// r.getVy = approximate stream velocity
 			// 3.28 used to convert stream velocity to ft/second
 			
-			double lift = -2 *  4.44 * (clift * q0* 0.107584 * 0.5);
+			double lift = -2 *  4.44 * (clift * q0* 0.107584 * 0.5 * fin_area_scale_factor);
 			
 			
 			// - = corrects direction
@@ -305,6 +307,7 @@ public class Simulate {
 			// 25.49 = q0 = ....
 			// 0.107584 = area of a fin (approx 10cm x 10cm) 0.328 * 0.328 = 0.1075ft^2  (if square)
 			// 0.5 ... because fins are triangular.....so half a square
+			// fin_area_scale_factor = to see what happens if fins are smaller.
 			
 			utils.debug(time, "Fin Lift:   " + lift + " Newtons");
 			

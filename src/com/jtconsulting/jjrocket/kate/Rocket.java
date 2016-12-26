@@ -282,6 +282,7 @@ public class Rocket {
 		this.cgz = cgz;
 	}
 	public final void updateRotationMotionState(double new_rotx_vel, double new_roty_vel, double new_rotz_vel,
+			                                    double new_ax,       double new_ay,       double new_az,
 			double time_slice) {
 		// ANGULAR MOTION
 		double old_ang_vx = this.getAng_vx();
@@ -303,6 +304,35 @@ public class Rocket {
 		this.setAng_x(this.getAng_x()   + time_slice * ang_vx_avg);
 		this.setAng_y(this.getAng_y()   + time_slice * ang_vy_avg);
 		this.setAng_z(this.getAng_z()   + time_slice * ang_vz_avg);
+		
+		
+		// TRANSLATIONAL MOTION
+		double old_vx = this.getVx();
+		double old_vy = this.getVy();
+		double old_vz = this.getVz();
+		
+		// Set Acceleration
+		this.setAx(new_ax);
+		this.setAy(new_ay);
+		this.setAz(new_az);		
+		
+		// Calculate the change in velocity
+		this.setVx(this.getVx() + time_slice * this.getAx());
+		this.setVy(this.getVy() + time_slice * this.getAy());
+		this.setVz(this.getVz() + time_slice * this.getAz());
+		
+		// Calculate average velocity over this time frame, so we can then calcalte new position 
+		double vx_avg = (old_vx + this.getVx())/2;
+		double vy_avg = (old_vy + this.getVy())/2;
+		double vz_avg = (old_vz + this.getVz())/2;
+		
+		// Calculate new position
+		this.setX(this.getX()  + time_slice * vx_avg);
+		this.setY(this.getY()  + time_slice * vy_avg);
+		this.setZ(this.getZ()  + time_slice * vz_avg);
+		
+		
+		// System.out.println("X,Y,Z = " + this.getX() + "," + this.getY() + "," + this.getZ());
 		
 		
 		

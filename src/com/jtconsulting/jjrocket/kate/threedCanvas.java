@@ -12,6 +12,7 @@ import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.DirectionalLight;
 import javax.media.j3d.LineArray;
+import javax.media.j3d.LineAttributes;
 import javax.media.j3d.Material;
 import javax.media.j3d.PointLight;
 import javax.media.j3d.Shape3D;
@@ -87,7 +88,7 @@ public class threedCanvas extends Applet {
  	   PointLight light = new PointLight();
  	   light.setPosition(new Point3f(20.0f, 6.0f, 20.0f));
  	   light.setColor(new Color3f(1.0f, 1.0f, 1.0f));
- 	   light.setAttenuation(1.0f, 0.0f, 0.0f);
+ 	   light.setAttenuation(0.0f, 0.0f, 0.0f);
 
        light.setInfluencingBounds(new BoundingSphere(new Point3d(), 2100.0));	          
        group.addChild(light);
@@ -98,6 +99,10 @@ public class threedCanvas extends Applet {
        Material red_ma = new Material();
        red_ma.setDiffuseColor(1.0f, 0.0f, 0.0f);
        red_ap.setMaterial(red_ma);
+       LineAttributes myLA = new LineAttributes( );
+       myLA.setLineWidth( 3.0f );
+       red_ap.setLineAttributes( myLA );
+       
        
 
  	   // MATERIAL - Rocket
@@ -108,10 +113,10 @@ public class threedCanvas extends Applet {
        
         
  	   // MATERIAL - Spinner rockets
-       Appearance ap_sp1 = new Appearance();
-       Material ma_sp1 = new Material();
-       ma_sp1.setDiffuseColor(1.0f, 0.0f, 0.0f);
-       ap_sp1.setMaterial(ma_sp1);     
+       //Appearance ap_sp1 = new Appearance();
+       //Material ma_sp1 = new Material();
+       //ma_sp1.setDiffuseColor(1.0f, 0.0f, 0.0f);
+       //ap_sp1.setMaterial(ma_sp1);     
        
        
  	   // MATERIAL - AXIS
@@ -127,8 +132,8 @@ public class threedCanvas extends Applet {
  	   
  	   // Line 
  	   LineArray line = new LineArray(2, LineArray.COORDINATES);
- 	   line.setCoordinate(0, new Point3d(0d,  -r.getLength()/2, -r.getRadius_external() * 6));
- 	   line.setCoordinate(1, new Point3d(0d,  r.getLength()/2,  -r.getRadius_external() * 6));
+ 	   line.setCoordinate(0, new Point3d(r.getRadius_external() * 6,  -r.getLength()/2, 0d));
+ 	   line.setCoordinate(1, new Point3d(r.getRadius_external() * 6,  r.getLength()/2, 0d ));
  	   Shape3D line_shape = new Shape3D(line, red_ap);
  	   
  	   
